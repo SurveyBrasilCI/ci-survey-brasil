@@ -216,6 +216,23 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 .db-warn{background:var(--amber-bg);color:var(--amber);}
 .db-ok{background:var(--green-bg);color:var(--green);}
 .st-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;}
+
+/* PÁGINAS GERENCIAIS */
+.page-title{font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:4px;display:flex;align-items:center;gap:7px;}
+.page-title i{font-size:17px;color:var(--accent);}
+.page-subtitle{font-size:11px;color:var(--text-tertiary);margin-bottom:14px;}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:14px;}
+.info-card{background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px;}
+.info-card .label{font-size:10px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em;font-family:var(--font-mono);margin-bottom:5px;}
+.info-card .value{font-size:20px;font-family:var(--font-mono);color:var(--text-primary);}
+.info-card .value.ok{color:var(--green);}
+.info-card .value.warn{color:var(--amber);}
+.info-card .value.danger{color:var(--red);}
+.table-note{font-size:10px;color:var(--text-tertiary);margin-bottom:8px;font-family:var(--font-mono);}
+.page-section{margin-bottom:16px;}
+.obs-vessel{font-size:11px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+.obs-meta{font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);margin-top:8px;}
+
 </style>
 </head>
 <body>
@@ -288,9 +305,15 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
     </div>
     <div class="cert-wrap"><table class="cert-table" id="cert-table"></table></div>
   </div>
-  <div id="page-inventario" class="page" style="text-align:center;padding:60px;color:var(--text-tertiary)"><i class="ti ti-device-laptop" style="font-size:32px;display:block;margin-bottom:10px;"></i>Inventário — em desenvolvimento</div>
-  <div id="page-pendencias" class="page" style="text-align:center;padding:60px;color:var(--text-tertiary)"><i class="ti ti-clipboard-list" style="font-size:32px;display:block;margin-bottom:10px;"></i>Pendências — em desenvolvimento</div>
-  <div id="page-observacoes" class="page" style="text-align:center;padding:60px;color:var(--text-tertiary)"><i class="ti ti-notes" style="font-size:32px;display:block;margin-bottom:10px;"></i>Observações — em desenvolvimento</div>
+  <div id="page-inventario" class="page">
+    <div id="inventario-content"></div>
+  </div>
+  <div id="page-pendencias" class="page">
+    <div id="pendencias-content"></div>
+  </div>
+  <div id="page-observacoes" class="page">
+    <div id="observacoes-content"></div>
+  </div>
 </div>
 
 <script>
@@ -397,8 +420,7 @@ function vSt(items){
 }
 function nv(items){return items.filter(i=>i.status!=='Spare').sort((a,b)=>new Date(a.vencimento)-new Date(b.vencimento))[0];}
 
-function buildList(data){
-  return FLEET.map(f=>{
+function buildList(data){  return FLEET.map(f=>{
     const its=data.inventario.filter(i=>i.embarcacao===f.embarcacao);
     const ps=data.pendencias.filter(p=>p.embarcacao===f.embarcacao&&p.status!=='Planejada'&&p.status!=='Concluída')
       .sort((a,b)=>(PRIO[a.prioridade]??9)-(PRIO[b.prioridade]??9)).slice(0,2);
@@ -576,15 +598,15 @@ function renderCert(){
   let rows=data.inventario.filter(i=>i.status!=='Spare');
   if(fv)rows=rows.filter(r=>r.embarcacao===fv);
   if(fe)rows=rows.filter(r=>r.equipamento===fe);
-  rows=rows.map(r=>({...r,d:days(r.vencimento)}));
-  if(fp===0){}else if(fp===-1)rows=rows.filter(r=>r.d<0);else rows=rows.filter(r=>r.d>=0&&r.d<=fp);
+  rows=rows.map(r=>({...r,d:r.vencimento?days(r.vencimento):null}));
+  if(fp===0){}else if(fp===-1)rows=rows.filter(r=>r.d!==null&&!Number.isNaN(r.d)&&r.d<0);else rows=rows.filter(r=>r.d!==null&&!Number.isNaN(r.d)&&r.d>=0&&r.d<=fp);
   rows.sort((a,b)=>a.d-b.d);
   let h=`<thead><tr><th>Embarcação</th><th>ROV/Sistema</th><th>Equipamento</th><th>Modelo</th><th>Nº Série</th><th>Vencimento</th><th>Status</th><th>Situação</th></tr></thead><tbody>`;
   if(!rows.length)h+=`<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-tertiary);">Nenhum resultado.</td></tr>`;
   rows.forEach(r=>{
     const st=eSt(r);
     const dc={ok:'#22c55e',warn:'#f59e0b',crit:'#ef4444'}[st]||'#6b7280';
-    const[dc2,dl]=r.d<0?['db-expired',`Vencido ${Math.abs(r.d)}d`]:r.d<=30?['db-crit',`${r.d}d`]:r.d<=60?['db-warn',`${r.d}d`]:['db-ok',`${r.d}d`];
+    const[dc2,dl]=(r.d===null||Number.isNaN(r.d))?['db-ok','Sem vencimento']:r.d<0?['db-expired',`Vencido ${Math.abs(r.d)}d`]:r.d<=30?['db-crit',`${r.d}d`]:r.d<=60?['db-warn',`${r.d}d`]:['db-ok',`${r.d}d`];
     h+=`<tr>
       <td><span class="cert-link" onclick="openVessel('${r.embarcacao.replace(/'/g,"\\'")}')">${r.embarcacao}</span></td>
       <td class="mono">${r.rov}</td><td>${r.equipamento}</td>
@@ -598,6 +620,131 @@ function renderCert(){
   h+='</tbody>';
   document.getElementById('cert-table').innerHTML=h;
 }
+
+function situationBadgeByDays(d){
+  if(d===null||Number.isNaN(d))return'<span class="days-badge db-ok">Sem vencimento</span>';
+  if(d<0)return`<span class="days-badge db-expired">Vencido ${Math.abs(d)}d</span>`;
+  if(d<=30)return`<span class="days-badge db-crit">${d}d</span>`;
+  if(d<=60)return`<span class="days-badge db-warn">${d}d</span>`;
+  return`<span class="days-badge db-ok">${d}d</span>`;
+}
+
+function renderInventario(){
+  const data=DataService._cache;if(!data)return;
+  const rows=[...data.inventario].sort((a,b)=>
+    a.embarcacao.localeCompare(b.embarcacao) ||
+    a.rov.localeCompare(b.rov) ||
+    a.equipamento.localeCompare(b.equipamento)
+  );
+  const total=rows.length;
+  const inop=rows.filter(r=>r.status==='Inoperante').length;
+  const spare=rows.filter(r=>r.status==='Spare').length;
+  const vencidos=rows.filter(r=>r.status!=='Spare'&&r.vencimento&&days(r.vencimento)<0).length;
+  const proximos=rows.filter(r=>r.status!=='Spare'&&r.vencimento&&days(r.vencimento)>=0&&days(r.vencimento)<=30).length;
+
+  let h=`<div class="page-title"><i class="ti ti-device-laptop"></i>Inventário</div>
+    <div class="page-subtitle">Lista consolidada dos equipamentos cadastrados na planilha, agrupando embarcação, ROV/sistema, modelo, série, vencimento e status.</div>
+    <div class="info-grid">
+      <div class="info-card"><div class="label">Itens cadastrados</div><div class="value">${total}</div></div>
+      <div class="info-card"><div class="label">Inoperantes</div><div class="value danger">${inop}</div></div>
+      <div class="info-card"><div class="label">Vencidos</div><div class="value danger">${vencidos}</div></div>
+      <div class="info-card"><div class="label">Vencem em 30d</div><div class="value warn">${proximos}</div></div>
+      <div class="info-card"><div class="label">Spare</div><div class="value">${spare}</div></div>
+    </div>
+    <div class="table-note">Dica: use a busca superior para localizar embarcação, ROV, equipamento, modelo ou número de série.</div>
+    <div class="cert-wrap"><table class="cert-table">
+    <thead><tr>
+      <th>Embarcação</th><th>ROV/Sistema</th><th>Equipamento</th><th>Fabricante</th><th>Modelo</th><th>Nº Série</th><th>Vencimento</th><th>Status</th><th>Situação</th>
+    </tr></thead><tbody>`;
+  if(!rows.length)h+=`<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-tertiary);">Nenhum equipamento cadastrado.</td></tr>`;
+  rows.forEach(r=>{
+    const d=r.vencimento?days(r.vencimento):null;
+    const st=eSt(r);
+    const dc={ok:'#22c55e',warn:'#f59e0b',crit:'#ef4444',spare:'#3b82f6'}[st]||'#6b7280';
+    h+=`<tr>
+      <td><span class="cert-link" onclick="openVessel('${r.embarcacao.replace(/'/g,"\\'")}')">${r.embarcacao}</span></td>
+      <td class="mono">${r.rov||'—'}</td>
+      <td>${r.equipamento||'—'}</td>
+      <td class="mono">${r.fabricante||'—'}</td>
+      <td class="mono">${r.modelo||'—'}</td>
+      <td class="mono" style="font-weight:700;">${r.serie||'—'}</td>
+      <td class="mono">${fmt(r.vencimento)}</td>
+      <td><span class="st-dot" style="background:${dc};"></span>${r.status||'—'}</td>
+      <td>${r.status==='Spare'?'<span class="days-badge db-ok">Spare</span>':situationBadgeByDays(d)}</td>
+    </tr>`;
+  });
+  h+=`</tbody></table></div>`;
+  document.getElementById('inventario-content').innerHTML=h;
+}
+
+function renderPendenciasPage(){
+  const data=DataService._cache;if(!data)return;
+  const rows=[...data.pendencias].sort((a,b)=>
+    (PRIO[a.prioridade]??9)-(PRIO[b.prioridade]??9) ||
+    a.embarcacao.localeCompare(b.embarcacao)
+  );
+  const abertas=rows.filter(p=>p.status==='Aberta').length;
+  const andamento=rows.filter(p=>p.status==='Em andamento').length;
+  const concluidas=rows.filter(p=>p.status==='Concluída').length;
+  const criticas=rows.filter(p=>p.prioridade==='Crítica'||p.prioridade==='Alta').length;
+
+  let h=`<div class="page-title"><i class="ti ti-clipboard-list"></i>Pendências</div>
+    <div class="page-subtitle">Controle visual das pendências cadastradas na planilha, com prioridade, status, prazo e equipamento relacionado.</div>
+    <div class="info-grid">
+      <div class="info-card"><div class="label">Total</div><div class="value">${rows.length}</div></div>
+      <div class="info-card"><div class="label">Abertas</div><div class="value warn">${abertas}</div></div>
+      <div class="info-card"><div class="label">Em andamento</div><div class="value warn">${andamento}</div></div>
+      <div class="info-card"><div class="label">Crítica/Alta</div><div class="value danger">${criticas}</div></div>
+      <div class="info-card"><div class="label">Concluídas</div><div class="value ok">${concluidas}</div></div>
+    </div>
+    <div class="pend-cards">`;
+  if(!rows.length)h+=`<div class="no-data">Nenhuma pendência cadastrada.</div>`;
+  rows.forEach(p=>{
+    const pc=(p.prioridade||'Média').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    h+=`<div class="pend-card p-${pc}">
+      <div class="pend-body">
+        <div class="pend-desc">${p.descricao||'Sem descrição'}</div>
+        <div class="pend-meta">
+          <span class="pend-tag"><i class="ti ti-ship"></i>${p.embarcacao||'—'}</span>
+          <span class="pend-tag"><i class="ti ti-tool"></i>${p.equipamento||'—'}</span>
+          ${p.prazo?`<span class="pend-tag"><i class="ti ti-calendar"></i>Prazo ${fmt(p.prazo)}</span>`:''}
+        </div>
+      </div>
+      <span class="pend-pri pri-${pc}">${p.prioridade||'Média'}</span>
+      <span class="pend-st">${p.status||'Aberta'}</span>
+    </div>`;
+  });
+  h+=`</div>`;
+  document.getElementById('pendencias-content').innerHTML=h;
+}
+
+function renderObservacoesPage(){
+  const data=DataService._cache;if(!data)return;
+  const rows=[...data.observacoes].sort((a,b)=>
+    a.embarcacao.localeCompare(b.embarcacao) ||
+    String(b.data||'').localeCompare(String(a.data||''))
+  );
+  const embarcacoes=new Set(rows.map(o=>o.embarcacao)).size;
+  let h=`<div class="page-title"><i class="ti ti-notes"></i>Observações</div>
+    <div class="page-subtitle">Registro de observações operacionais por embarcação. Ideal para informações fixas, exceções de sistema e pontos de atenção.</div>
+    <div class="info-grid">
+      <div class="info-card"><div class="label">Observações</div><div class="value">${rows.length}</div></div>
+      <div class="info-card"><div class="label">Embarcações com nota</div><div class="value">${embarcacoes}</div></div>
+    </div>
+    <div class="obs-board">`;
+  if(!rows.length)h+=`<div class="no-data">Nenhuma observação cadastrada.</div>`;
+  rows.forEach(o=>{
+    h+=`<div class="obs-note">
+      <div class="obs-vessel">${o.embarcacao}</div>
+      <div class="obs-text">${o.texto}</div>
+      <div class="obs-meta">${fmt(o.data)}</div>
+    </div>`;
+  });
+  h+=`</div>`;
+  document.getElementById('observacoes-content').innerHTML=h;
+}
+
+
 let allV=[];
 function onSearch(q){
   const t=q.toLowerCase().trim();
@@ -625,6 +772,9 @@ function setPage(p){
   document.getElementById('search-bar').style.display=p==='vessel'?'none':'';
   if(p==='dashboard')renderGrid(allV);
   if(p==='cert')renderCert();
+  if(p==='inventario')renderInventario();
+  if(p==='pendencias')renderPendenciasPage();
+  if(p==='observacoes')renderObservacoesPage();
 }
 async function loadData(force=false){
   if(force)DataService.invalidate();
@@ -639,6 +789,9 @@ async function loadData(force=false){
     renderGrid(allV);
     renderMatrix(data);
     initCertFilters(data);
+    renderInventario();
+    renderPendenciasPage();
+    renderObservacoesPage();
     document.getElementById('load-state').style.display='none';
     document.getElementById('dashboard-content').style.display='block';
   }catch(e){
