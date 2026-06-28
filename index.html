@@ -261,7 +261,6 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
   <div class="nav-item active" onclick="setPage('dashboard')" id="nav-dashboard"><i class="ti ti-layout-dashboard"></i> Visão Geral</div>
   <div class="nav-item" onclick="setPage('matrix')" id="nav-matrix"><i class="ti ti-table"></i> Fleet Matrix</div>
   <div class="nav-item" onclick="setPage('cert')" id="nav-cert"><i class="ti ti-certificate"></i> Certificações</div>
-  <div class="nav-item" onclick="setPage('inventario')" id="nav-inventario"><i class="ti ti-device-laptop"></i> Inventário</div>
   <div class="nav-item" onclick="setPage('pendencias')" id="nav-pendencias"><i class="ti ti-clipboard-list"></i> Pendências</div>
   <div class="nav-item" onclick="setPage('observacoes')" id="nav-observacoes"><i class="ti ti-notes"></i> Observações</div>
 </nav>
@@ -305,9 +304,6 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
     </div>
     <div class="cert-wrap"><table class="cert-table" id="cert-table"></table></div>
   </div>
-  <div id="page-inventario" class="page">
-    <div id="inventario-content"></div>
-  </div>
   <div id="page-pendencias" class="page">
     <div id="pendencias-content"></div>
   </div>
@@ -327,7 +323,6 @@ const FLEET=[
   {embarcacao:'Bram Atlas',rovs:['UHD85']},
   {embarcacao:'Bram Bravo',rovs:['UHD104']},
   {embarcacao:'Bram Force',rovs:['UHD53']},
-  {embarcacao:'Bram Power',rovs:['UHD76']},
   {embarcacao:'Bram Spirit',rovs:['UHD68','UHD69']},
   {embarcacao:'Bram Titan',rovs:['UHD70']},
   {embarcacao:'Bushbuck',rovs:['UHD108']},
@@ -336,14 +331,11 @@ const FLEET=[
   {embarcacao:'Eland',rovs:['UHD47','UHD100']},
   {embarcacao:'Island Enforcer',rovs:['UHD51','UHD52']},
   {embarcacao:'Island Intervention',rovs:['UHD59','UHD82']},
-  {embarcacao:'Island Venture',rovs:['UHD311','UHD312']},
   {embarcacao:'Joe Griffin',rovs:['UHD96']},
   {embarcacao:'Kirt Chouest',rovs:['UHD302','UHD322']},
-  {embarcacao:'Kudu',rovs:['UHD337','UHD338']},
   {embarcacao:'Laney Chouest',rovs:['UHD45']},
   {embarcacao:'Normand Poseidon',rovs:['UHD99','UHD101']},
   {embarcacao:'Paulo Cunha',rovs:['UHD105']},
-  {embarcacao:'Sable',rovs:['UHD315']},
   {embarcacao:'Santos Service',rovs:['UHD301']},
   {embarcacao:'Wildebeest',rovs:['UHD77']},
 ];
@@ -353,6 +345,7 @@ const ROV_EQ=['SprintNav','Mini-Beacon','Digiquartz','SVX','DVL'];
 const SYS_EQ=['Ranger','HPT','Navipac PC','Ranger PC','NAS','DVR'];
 const SPLIT_EQ=new Set(['SprintNav','Mini-Beacon','Digiquartz','SVX','DVL']);
 const PRIO={Crítica:0,Alta:1,Média:2,Baixa:3};
+const FLEET_NAMES=new Set(FLEET.map(f=>f.embarcacao));
 
 const DataService={
   _cache:null,
@@ -383,7 +376,7 @@ const DataService={
       serie:this.nk(r,'Serie','Série'),
       vencimento:this.parseDateBR(this.nk(r,'Vencimento')),
       status:this.nk(r,'Status')||'Operacional',
-    })).filter(r=>r.embarcacao&&r.equipamento);
+    })).filter(r=>r.embarcacao&&r.equipamento&&FLEET_NAMES.has(r.embarcacao));
     const pendencias=rp.map(r=>({
       embarcacao:this.nk(r,'Embarcacao','Embarcação'),
       equipamento:this.nk(r,'Equipamento'),
@@ -391,12 +384,12 @@ const DataService={
       prioridade:this.nk(r,'Prioridade')||'Média',
       status:this.nk(r,'Status')||'Aberta',
       prazo:this.parseDateBR(this.nk(r,'Prazo')),
-    })).filter(r=>r.embarcacao);
+    })).filter(r=>r.embarcacao&&FLEET_NAMES.has(r.embarcacao));
     const observacoes=ro.map(r=>({
       embarcacao:this.nk(r,'Embarcacao','Embarcação'),
       texto:this.nk(r,'Texto'),
       data:this.parseDateBR(this.nk(r,'Data')),
-    })).filter(r=>r.embarcacao&&r.texto);
+    })).filter(r=>r.embarcacao&&r.texto&&FLEET_NAMES.has(r.embarcacao));
     this._cache={lastUpdate:new Date().toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}),inventario,pendencias,observacoes};
     return this._cache;
   },
@@ -621,62 +614,6 @@ function renderCert(){
   document.getElementById('cert-table').innerHTML=h;
 }
 
-function situationBadgeByDays(d){
-  if(d===null||Number.isNaN(d))return'<span class="days-badge db-ok">Sem vencimento</span>';
-  if(d<0)return`<span class="days-badge db-expired">Vencido ${Math.abs(d)}d</span>`;
-  if(d<=30)return`<span class="days-badge db-crit">${d}d</span>`;
-  if(d<=60)return`<span class="days-badge db-warn">${d}d</span>`;
-  return`<span class="days-badge db-ok">${d}d</span>`;
-}
-
-function renderInventario(){
-  const data=DataService._cache;if(!data)return;
-  const rows=[...data.inventario].sort((a,b)=>
-    a.embarcacao.localeCompare(b.embarcacao) ||
-    a.rov.localeCompare(b.rov) ||
-    a.equipamento.localeCompare(b.equipamento)
-  );
-  const total=rows.length;
-  const inop=rows.filter(r=>r.status==='Inoperante').length;
-  const spare=rows.filter(r=>r.status==='Spare').length;
-  const vencidos=rows.filter(r=>r.status!=='Spare'&&r.vencimento&&days(r.vencimento)<0).length;
-  const proximos=rows.filter(r=>r.status!=='Spare'&&r.vencimento&&days(r.vencimento)>=0&&days(r.vencimento)<=30).length;
-
-  let h=`<div class="page-title"><i class="ti ti-device-laptop"></i>Inventário</div>
-    <div class="page-subtitle">Lista consolidada dos equipamentos cadastrados na planilha, agrupando embarcação, ROV/sistema, modelo, série, vencimento e status.</div>
-    <div class="info-grid">
-      <div class="info-card"><div class="label">Itens cadastrados</div><div class="value">${total}</div></div>
-      <div class="info-card"><div class="label">Inoperantes</div><div class="value danger">${inop}</div></div>
-      <div class="info-card"><div class="label">Vencidos</div><div class="value danger">${vencidos}</div></div>
-      <div class="info-card"><div class="label">Vencem em 30d</div><div class="value warn">${proximos}</div></div>
-      <div class="info-card"><div class="label">Spare</div><div class="value">${spare}</div></div>
-    </div>
-    <div class="table-note">Dica: use a busca superior para localizar embarcação, ROV, equipamento, modelo ou número de série.</div>
-    <div class="cert-wrap"><table class="cert-table">
-    <thead><tr>
-      <th>Embarcação</th><th>ROV/Sistema</th><th>Equipamento</th><th>Fabricante</th><th>Modelo</th><th>Nº Série</th><th>Vencimento</th><th>Status</th><th>Situação</th>
-    </tr></thead><tbody>`;
-  if(!rows.length)h+=`<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-tertiary);">Nenhum equipamento cadastrado.</td></tr>`;
-  rows.forEach(r=>{
-    const d=r.vencimento?days(r.vencimento):null;
-    const st=eSt(r);
-    const dc={ok:'#22c55e',warn:'#f59e0b',crit:'#ef4444',spare:'#3b82f6'}[st]||'#6b7280';
-    h+=`<tr>
-      <td><span class="cert-link" onclick="openVessel('${r.embarcacao.replace(/'/g,"\\'")}')">${r.embarcacao}</span></td>
-      <td class="mono">${r.rov||'—'}</td>
-      <td>${r.equipamento||'—'}</td>
-      <td class="mono">${r.fabricante||'—'}</td>
-      <td class="mono">${r.modelo||'—'}</td>
-      <td class="mono" style="font-weight:700;">${r.serie||'—'}</td>
-      <td class="mono">${fmt(r.vencimento)}</td>
-      <td><span class="st-dot" style="background:${dc};"></span>${r.status||'—'}</td>
-      <td>${r.status==='Spare'?'<span class="days-badge db-ok">Spare</span>':situationBadgeByDays(d)}</td>
-    </tr>`;
-  });
-  h+=`</tbody></table></div>`;
-  document.getElementById('inventario-content').innerHTML=h;
-}
-
 function renderPendenciasPage(){
   const data=DataService._cache;if(!data)return;
   const rows=[...data.pendencias].sort((a,b)=>
@@ -772,7 +709,6 @@ function setPage(p){
   document.getElementById('search-bar').style.display=p==='vessel'?'none':'';
   if(p==='dashboard')renderGrid(allV);
   if(p==='cert')renderCert();
-  if(p==='inventario')renderInventario();
   if(p==='pendencias')renderPendenciasPage();
   if(p==='observacoes')renderObservacoesPage();
 }
@@ -789,7 +725,6 @@ async function loadData(force=false){
     renderGrid(allV);
     renderMatrix(data);
     initCertFilters(data);
-    renderInventario();
     renderPendenciasPage();
     renderObservacoesPage();
     document.getElementById('load-state').style.display='none';
