@@ -34,8 +34,40 @@
   --radius-lg:10px;
   --font-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   --font-mono:'JetBrains Mono','Fira Code','Courier New',monospace;
+  --app-zoom:1;
 }
-body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text-primary);min-height:100vh;}
+body[data-theme="light"]{
+  --bg-primary:#f8fafc;
+  --bg-secondary:#eef2f7;
+  --bg-tertiary:#e5eaf1;
+  --border:#cbd5e1;
+  --border-secondary:#94a3b8;
+  --text-primary:#0f172a;
+  --text-secondary:#334155;
+  --text-tertiary:#64748b;
+  --accent:#0077a8;
+  --accent-bg:rgba(0,119,168,.12);
+  --accent-border:#0077a8;
+  --green-bg:rgba(22,163,74,.12);
+  --amber-bg:rgba(217,119,6,.14);
+  --red-bg:rgba(220,38,38,.12);
+  --orange-bg:rgba(234,88,12,.12);
+  --blue-bg:rgba(37,99,235,.12);
+}
+body[data-theme="contrast"]{
+  --bg-primary:#05080f;
+  --bg-secondary:#0a1020;
+  --bg-tertiary:#00040a;
+  --border:#2f4363;
+  --border-secondary:#48658f;
+  --text-primary:#ffffff;
+  --text-secondary:#d7e3f5;
+  --text-tertiary:#8fa6c8;
+  --accent:#00e5ff;
+  --accent-bg:rgba(0,229,255,.16);
+  --accent-border:#00e5ff;
+}
+body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text-primary);min-height:100vh;zoom:var(--app-zoom);}
 
 /* TOPBAR */
 .topbar{background:var(--bg-primary);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:48px;position:sticky;top:0;z-index:100;}
@@ -49,6 +81,11 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 .btn{font-size:11px;padding:5px 12px;border:1px solid var(--border-secondary);border-radius:var(--radius-sm);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:var(--font-sans);display:flex;align-items:center;gap:5px;transition:all .15s;}
 .btn:hover{background:var(--bg-secondary);color:var(--text-primary);}
 .btn i{font-size:13px;}
+.ui-controls{display:flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:var(--radius-md);padding:3px;background:var(--bg-tertiary);}
+.control-btn{height:26px;min-width:30px;padding:0 8px;border:1px solid transparent;border-radius:var(--radius-sm);background:transparent;color:var(--text-secondary);font-size:11px;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;transition:all .15s;}
+.control-btn:hover{background:var(--bg-secondary);color:var(--text-primary);border-color:var(--border-secondary);}
+.control-btn i{font-size:14px;}
+.font-indicator{font-size:10px;font-family:var(--font-mono);color:var(--text-tertiary);min-width:34px;text-align:center;padding:0 4px;}
 
 /* SEARCH */
 .search-bar{background:var(--bg-primary);border-bottom:1px solid var(--border);padding:10px 20px;}
@@ -273,6 +310,12 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
     <div><div class="brand-name">CI Survey Brasil</div><div class="brand-sub">Fleet Configuration Portal</div></div>
   </div>
   <div class="topbar-right">
+    <div class="ui-controls" title="Preferências visuais">
+      <button class="control-btn" onclick="cycleTheme()" id="theme-toggle" title="Mudar tema"><i class="ti ti-moon"></i><span id="theme-label">Escuro</span></button>
+      <button class="control-btn" onclick="changeFontSize(-1)" title="Diminuir fonte"><i class="ti ti-letter-a-small"></i></button>
+      <span class="font-indicator" id="font-indicator">100%</span>
+      <button class="control-btn" onclick="changeFontSize(1)" title="Aumentar fonte"><i class="ti ti-letter-a"></i></button>
+    </div>
     <span class="last-update" id="last-update">Carregando...</span>
     <button class="btn" onclick="loadData(true)"><i class="ti ti-refresh"></i> Atualizar</button>
   </div>
@@ -437,6 +480,53 @@ const SYS_EQ=['Ranger','HPT','Navipac PC','Ranger PC','NAS','DVR'];
 const SPLIT_EQ=new Set(['SprintNav','Mini-Beacon','Digiquartz','SVX','DVL']);
 const PRIO={Crítica:0,Alta:1,Média:2,Baixa:3};
 const FLEET_NAMES=new Set(FLEET.map(f=>f.embarcacao));
+
+const THEME_OPTIONS=[
+  {id:'dark',label:'Escuro',icon:'ti-moon'},
+  {id:'light',label:'Claro',icon:'ti-sun'},
+  {id:'contrast',label:'Contraste',icon:'ti-contrast'}
+];
+const FONT_LEVELS=[
+  {label:'90%',zoom:.9},
+  {label:'100%',zoom:1},
+  {label:'110%',zoom:1.1},
+  {label:'120%',zoom:1.2},
+  {label:'130%',zoom:1.3}
+];
+let fontLevel=parseInt(localStorage.getItem('ci-font-level')||'1',10);
+if(Number.isNaN(fontLevel)||fontLevel<0||fontLevel>=FONT_LEVELS.length)fontLevel=1;
+
+function applyTheme(){
+  const saved=localStorage.getItem('ci-theme')||'dark';
+  const theme=THEME_OPTIONS.find(t=>t.id===saved)||THEME_OPTIONS[0];
+  document.body.setAttribute('data-theme',theme.id);
+  const btn=document.getElementById('theme-toggle');
+  const lab=document.getElementById('theme-label');
+  if(btn){
+    const icon=btn.querySelector('i');
+    if(icon)icon.className='ti '+theme.icon;
+  }
+  if(lab)lab.textContent=theme.label;
+}
+function cycleTheme(){
+  const current=document.body.getAttribute('data-theme')||localStorage.getItem('ci-theme')||'dark';
+  const idx=THEME_OPTIONS.findIndex(t=>t.id===current);
+  const next=THEME_OPTIONS[(idx+1+THEME_OPTIONS.length)%THEME_OPTIONS.length];
+  localStorage.setItem('ci-theme',next.id);
+  applyTheme();
+}
+function applyFontSize(){
+  const fs=FONT_LEVELS[fontLevel]||FONT_LEVELS[1];
+  document.body.style.setProperty('--app-zoom',fs.zoom);
+  const ind=document.getElementById('font-indicator');
+  if(ind)ind.textContent=fs.label;
+}
+function changeFontSize(delta){
+  fontLevel=Math.max(0,Math.min(FONT_LEVELS.length-1,fontLevel+delta));
+  localStorage.setItem('ci-font-level',String(fontLevel));
+  applyFontSize();
+}
+
 
 const DataService={
   _cache:null,
@@ -925,6 +1015,8 @@ async function loadData(force=false){
     </div>`;
   }
 }
+applyTheme();
+applyFontSize();
 loadData();
 </script>
 </body>
