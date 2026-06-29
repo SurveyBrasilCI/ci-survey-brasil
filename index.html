@@ -85,6 +85,28 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 .summary-value.danger{color:var(--red);}
 .summary-value.warn{color:var(--amber);}
 
+
+/* FILTRO DA VISÃO GERAL */
+.dashboard-filter-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:-4px 0 14px 0;}
+.filter-dropdown{position:relative;}
+.filter-trigger{height:32px;min-width:240px;padding:0 10px;border:1px solid var(--border-secondary);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-primary);font-size:12px;font-family:var(--font-sans);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.filter-trigger:hover{border-color:var(--accent-border);}
+.filter-trigger i{font-size:14px;color:var(--accent);}
+.filter-trigger .chev{color:var(--text-tertiary);}
+.filter-menu{display:none;position:absolute;top:38px;left:0;width:310px;max-height:380px;overflow:hidden;background:var(--bg-primary);border:1px solid var(--border-secondary);border-radius:var(--radius-md);box-shadow:0 18px 35px rgba(0,0,0,.35);z-index:200;}
+.filter-dropdown.open .filter-menu{display:block;}
+.filter-actions{display:flex;gap:6px;padding:8px;border-bottom:1px solid var(--border);}
+.filter-action-btn{font-size:10px;font-family:var(--font-mono);padding:5px 8px;border:1px solid var(--border-secondary);border-radius:var(--radius-sm);background:var(--bg-secondary);color:var(--text-secondary);cursor:pointer;}
+.filter-action-btn:hover{color:var(--text-primary);border-color:var(--accent-border);}
+.filter-options{max-height:300px;overflow-y:auto;padding:6px;}
+.filter-options::-webkit-scrollbar{width:8px;}
+.filter-options::-webkit-scrollbar-thumb{background:var(--border-secondary);border-radius:8px;}
+.filter-option{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:var(--radius-sm);font-size:12px;color:var(--text-secondary);cursor:pointer;}
+.filter-option:hover{background:var(--bg-secondary);color:var(--text-primary);}
+.filter-option input{accent-color:var(--accent);}
+.filter-option span{flex:1;}
+.filter-help{font-size:11px;color:var(--text-tertiary);font-family:var(--font-mono);}
+
 /* FLEET GRID */
 .section-label{font-size:10px;font-weight:500;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.08em;font-family:var(--font-mono);margin-bottom:10px;}
 .vessels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;}
@@ -273,6 +295,23 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
     </div>
     <div id="dashboard-content" style="display:none;">
       <div class="summary-row" id="summary-row"></div>
+      <div class="dashboard-filter-bar">
+        <div class="filter-dropdown" id="vf-dropdown">
+          <button class="filter-trigger" type="button" onclick="toggleVesselFilter(event)">
+            <i class="ti ti-ship"></i>
+            <span id="vf-label">Todas as embarcações</span>
+            <i class="ti ti-chevron-down chev"></i>
+          </button>
+          <div class="filter-menu" id="vf-menu">
+            <div class="filter-actions">
+              <button class="filter-action-btn" type="button" onclick="selectAllVessels(event)">Selecionar todas</button>
+              <button class="filter-action-btn" type="button" onclick="clearAllVessels(event)">Limpar seleção</button>
+            </div>
+            <div class="filter-options" id="vf-options"></div>
+          </div>
+        </div>
+        <div class="filter-help" id="vf-help">Mostrando toda a frota</div>
+      </div>
       <div class="section-label">Frota — <span id="vessel-count"></span></div>
       <div class="vessels-grid" id="vessels-grid"></div>
     </div>
@@ -459,10 +498,11 @@ function dashCard(v){
   </div>`;
 }
 function renderSummary(data,vessels){
+  const names=new Set(vessels.map(v=>v.name));
   const crit=vessels.filter(v=>v.st==='crit').length;
   const warn=vessels.filter(v=>v.st==='warn').length;
-  const inop=data.inventario.filter(i=>i.status==='Inoperante').length;
-  const pab=data.pendencias.filter(p=>p.status==='Aberta'||p.status==='Em andamento').length;
+  const inop=data.inventario.filter(i=>names.has(i.embarcacao)&&i.status==='Inoperante').length;
+  const pab=data.pendencias.filter(p=>names.has(p.embarcacao)&&(p.status==='Aberta'||p.status==='Em andamento')).length;
   document.getElementById('summary-row').innerHTML=`
     <div class="summary-card"><div class="summary-label">Frota</div><div class="summary-value">${vessels.length}</div></div>
     <div class="summary-card"><div class="summary-label">Crítico</div><div class="summary-value danger">${crit}</div></div>
@@ -683,22 +723,104 @@ function renderObservacoesPage(){
 
 
 let allV=[];
-function onSearch(q){
-  const t=q.toLowerCase().trim();
+let currentSearch='';
+let selectedVessels=new Set(FLEET.map(f=>f.embarcacao));
+try{
+  const saved=localStorage.getItem('ciSurveySelectedVessels');
+  if(saved!==null){
+    const arr=JSON.parse(saved);
+    if(Array.isArray(arr))selectedVessels=new Set(arr.filter(n=>FLEET_NAMES.has(n)));
+  }
+}catch(e){}
+
+function saveVesselSelection(){
+  try{localStorage.setItem('ciSurveySelectedVessels',JSON.stringify([...selectedVessels]));}catch(e){}
+}
+function toggleVesselFilter(ev){
+  ev.stopPropagation();
+  document.getElementById('vf-dropdown').classList.toggle('open');
+}
+function initVesselFilter(){
+  const el=document.getElementById('vf-options');
+  if(!el)return;
+  el.innerHTML=FLEET.map(f=>`<label class="filter-option">
+    <input type="checkbox" value="${f.embarcacao}" ${selectedVessels.has(f.embarcacao)?'checked':''} onchange="onVesselCheck(this)">
+    <span>${f.embarcacao}</span>
+  </label>`).join('');
+  updateVesselFilterLabel();
+}
+function syncVesselChecks(){
+  document.querySelectorAll('#vf-options input[type="checkbox"]').forEach(cb=>{cb.checked=selectedVessels.has(cb.value);});
+}
+function onVesselCheck(cb){
+  if(cb.checked)selectedVessels.add(cb.value);
+  else selectedVessels.delete(cb.value);
+  saveVesselSelection();
+  renderDashboardView();
+}
+function selectAllVessels(ev){
+  if(ev)ev.stopPropagation();
+  selectedVessels=new Set(FLEET.map(f=>f.embarcacao));
+  saveVesselSelection();
+  syncVesselChecks();
+  renderDashboardView();
+}
+function clearAllVessels(ev){
+  if(ev)ev.stopPropagation();
+  selectedVessels.clear();
+  saveVesselSelection();
+  syncVesselChecks();
+  renderDashboardView();
+}
+function updateVesselFilterLabel(visibleCount=null){
+  const label=document.getElementById('vf-label');
+  const help=document.getElementById('vf-help');
+  if(!label||!help)return;
+  const total=FLEET.length;
+  const sel=selectedVessels.size;
+  if(sel===total)label.textContent='Todas as embarcações';
+  else if(sel===0)label.textContent='Nenhuma embarcação selecionada';
+  else if(sel===1)label.textContent=[...selectedVessels][0];
+  else label.textContent=`${sel} embarcações selecionadas`;
+  const qtd=visibleCount===null?getVisibleVessels().length:visibleCount;
+  const busca=currentSearch.trim()?` com busca "${currentSearch.trim()}"`:'';
+  help.textContent=`Mostrando ${qtd} de ${total} embarcações${busca}`;
+}
+function getSearchMatches(t){
   const data=DataService._cache;
-  if(!t){renderGrid(allV);return;}
-  if(!data)return;
   const m=new Set();
+  if(!data)return m;
   data.inventario.forEach(i=>{if([i.embarcacao,i.equipamento,i.modelo,i.fabricante,i.serie,i.rov].join(' ').toLowerCase().includes(t))m.add(i.embarcacao);});
-  FLEET.forEach(f=>{if(f.rovs.some(r=>r.toLowerCase().includes(t)))m.add(f.embarcacao);});
-  data.pendencias.forEach(p=>{if(p.descricao.toLowerCase().includes(t))m.add(p.embarcacao);});
-  renderGrid(allV.filter(v=>m.has(v.name)));
+  FLEET.forEach(f=>{if([f.embarcacao,...f.rovs].join(' ').toLowerCase().includes(t))m.add(f.embarcacao);});
+  data.pendencias.forEach(p=>{if([p.embarcacao,p.equipamento,p.descricao,p.prioridade,p.status].join(' ').toLowerCase().includes(t))m.add(p.embarcacao);});
+  data.observacoes.forEach(o=>{if([o.embarcacao,o.texto].join(' ').toLowerCase().includes(t))m.add(o.embarcacao);});
+  return m;
+}
+function getVisibleVessels(){
+  const t=currentSearch.toLowerCase().trim();
+  let rows=allV.filter(v=>selectedVessels.has(v.name));
+  if(t){
+    const m=getSearchMatches(t);
+    rows=rows.filter(v=>m.has(v.name));
+  }
+  return rows;
+}
+function renderDashboardView(){
+  const data=DataService._cache;
+  const visible=getVisibleVessels();
+  if(data)renderSummary(data,visible);
+  renderGrid(visible);
+  updateVesselFilterLabel(visible.length);
+}
+function onSearch(q){
+  currentSearch=q||'';
   if(!document.getElementById('page-dashboard').classList.contains('active'))setPage('dashboard');
+  else renderDashboardView();
 }
 function renderGrid(vessels){
   document.getElementById('vessel-count').textContent=`${vessels.length} embarcação${vessels.length!==1?'s':''}`;
   document.getElementById('vessels-grid').innerHTML=vessels.length===0
-    ?`<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-tertiary);">Nenhum resultado.</div>`
+    ?`<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-tertiary);">Nenhum resultado. Ajuste a busca ou a seleção de embarcações.</div>`
     :vessels.map(dashCard).join('');
 }
 function setPage(p){
@@ -707,11 +829,15 @@ function setPage(p){
   document.getElementById('page-'+p).classList.add('active');
   const n=document.getElementById('nav-'+p);if(n)n.classList.add('active');
   document.getElementById('search-bar').style.display=p==='vessel'?'none':'';
-  if(p==='dashboard')renderGrid(allV);
+  if(p==='dashboard')renderDashboardView();
   if(p==='cert')renderCert();
   if(p==='pendencias')renderPendenciasPage();
   if(p==='observacoes')renderObservacoesPage();
 }
+document.addEventListener('click',function(ev){
+  const dd=document.getElementById('vf-dropdown');
+  if(dd&&!dd.contains(ev.target))dd.classList.remove('open');
+});
 async function loadData(force=false){
   if(force)DataService.invalidate();
   document.getElementById('load-state').style.display='flex';
@@ -721,8 +847,8 @@ async function loadData(force=false){
     const data=await DataService.getData();
     document.getElementById('last-update').textContent='Atualizado '+data.lastUpdate;
     allV=buildList(data);
-    renderSummary(data,allV);
-    renderGrid(allV);
+    initVesselFilter();
+    renderDashboardView();
     renderMatrix(data);
     initCertFilters(data);
     renderPendenciasPage();
