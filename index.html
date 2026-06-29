@@ -409,6 +409,28 @@ const VESSEL_IMAGES={
   'Wildebeest':'assets/vessels/wildebeest.jpg'
 };
 
+const VESSEL_IMAGE_POSITIONS={
+  'Bongo':'center 38%',
+  'Bram Atlas':'center 40%',
+  'Bram Bravo':'center 55%',
+  'Bram Force':'center 42%',
+  'Bram Spirit':'center 34%',
+  'Bram Titan':'center 42%',
+  'Bushbuck':'center 48%',
+  'Cabo Frio':'center 52%',
+  'Deborah Kay':'center 40%',
+  'Eland':'center 43%',
+  'Island Enforcer':'center 46%',
+  'Island Intervention':'center 42%',
+  'Joe Griffin':'center 58%',
+  'Kirt Chouest':'center 42%',
+  'Laney Chouest':'center 53%',
+  'Normand Poseidon':'center 56%',
+  'Paulo Cunha':'center 40%',
+  'Santos Service':'center 38%',
+  'Wildebeest':'center 36%'
+};
+
 const CRIT_EQ=['SprintNav','Mini-Beacon','Digiquartz','SVX','Ranger'];
 const ROV_EQ=['SprintNav','Mini-Beacon','Digiquartz','SVX','DVL'];
 const SYS_EQ=['Ranger','HPT','Navipac PC','Ranger PC','NAS','DVR'];
@@ -514,6 +536,7 @@ function pendsMini(ps){
   }).join('');
 }
 function vesselImage(name){return VESSEL_IMAGES[name]||'';}
+function vesselImagePosition(name){return VESSEL_IMAGE_POSITIONS[name]||'center center';}
 function dashCard(v){
   const sc={ok:'stripe-ok',warn:'stripe-warn',crit:'stripe-critical'}[v.st];
   const img=vesselImage(v.name);
