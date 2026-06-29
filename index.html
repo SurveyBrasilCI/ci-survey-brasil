@@ -109,12 +109,20 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 
 /* FLEET GRID */
 .section-label{font-size:10px;font-weight:500;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.08em;font-family:var(--font-mono);margin-bottom:10px;}
-.vessels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;}
-.vessel-card{background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;display:flex;cursor:pointer;transition:border-color .15s;}
-.vessel-card:hover{border-color:var(--border-secondary);}
-.vessel-stripe{width:3px;flex-shrink:0;}
+.vessels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;}
+.vessel-card{background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;display:block;position:relative;cursor:pointer;transition:border-color .15s,transform .15s;}
+.vessel-card:hover{border-color:var(--border-secondary);transform:translateY(-1px);}
+.vessel-stripe{position:absolute;left:0;top:0;bottom:0;width:3px;z-index:3;}
 .stripe-ok{background:var(--green);}.stripe-warn{background:var(--amber);}.stripe-critical{background:var(--red);}
-.vessel-body{padding:12px 14px;flex:1;min-width:0;}
+.vessel-photo{height:130px;position:relative;background:linear-gradient(135deg,var(--bg-secondary),var(--bg-tertiary));overflow:hidden;}
+.vessel-photo img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(.95) contrast(.95);transition:transform .2s,filter .2s;}
+.vessel-card:hover .vessel-photo img{transform:scale(1.025);filter:saturate(1.05) contrast(1);}
+.vessel-photo::after{content:'';position:absolute;left:0;right:0;bottom:0;height:60%;background:linear-gradient(to top,rgba(15,22,35,.95),rgba(15,22,35,.25),rgba(15,22,35,0));pointer-events:none;}
+.vessel-photo-label{position:absolute;left:14px;bottom:10px;right:14px;z-index:2;display:flex;align-items:flex-end;justify-content:space-between;gap:10px;}
+.vessel-photo-name{font-size:14px;font-weight:700;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.8);line-height:1.1;}
+.vessel-photo-rovs{font-size:10px;color:#b7c8e4;font-family:var(--font-mono);text-shadow:0 1px 6px rgba(0,0,0,.8);white-space:nowrap;}
+.vessel-body{padding:12px 14px;min-width:0;}
+.vessel-body .vessel-header{display:none;}
 .vessel-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;gap:8px;}
 .vessel-name{font-size:13px;font-weight:600;color:var(--text-primary);line-height:1.2;}
 .vessel-meta-line{font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);margin-top:2px;}
@@ -379,6 +387,28 @@ const FLEET=[
   {embarcacao:'Wildebeest',rovs:['UHD77']},
 ];
 
+const VESSEL_IMAGES={
+  'Bongo':'assets/vessels/bongo.jpg',
+  'Bram Atlas':'assets/vessels/bram-atlas.jpg',
+  'Bram Bravo':'assets/vessels/bram-bravo.jpg',
+  'Bram Force':'assets/vessels/bram-force.jpg',
+  'Bram Spirit':'assets/vessels/bram-spirit.jpg',
+  'Bram Titan':'assets/vessels/bram-titan.jpg',
+  'Bushbuck':'assets/vessels/bushbuck.jpg',
+  'Cabo Frio':'assets/vessels/cabo-frio.jpg',
+  'Deborah Kay':'assets/vessels/deborah-kay.jpg',
+  'Eland':'assets/vessels/eland.jpg',
+  'Island Enforcer':'assets/vessels/island-enforcer.jpg',
+  'Island Intervention':'assets/vessels/island-intervention.jpg',
+  'Joe Griffin':'assets/vessels/joe-griffin.jpg',
+  'Kirt Chouest':'assets/vessels/kirt-chouest.jpg',
+  'Laney Chouest':'assets/vessels/laney-chouest.jpg',
+  'Normand Poseidon':'assets/vessels/normand-poseidon.jpg',
+  'Paulo Cunha':'assets/vessels/paulo-cunha.jpg',
+  'Santos Service':'assets/vessels/santos-service.jpg',
+  'Wildebeest':'assets/vessels/wildebeest.jpg'
+};
+
 const CRIT_EQ=['SprintNav','Mini-Beacon','Digiquartz','SVX','Ranger'];
 const ROV_EQ=['SprintNav','Mini-Beacon','Digiquartz','SVX','DVL'];
 const SYS_EQ=['Ranger','HPT','Navipac PC','Ranger PC','NAS','DVR'];
@@ -483,10 +513,19 @@ function pendsMini(ps){
     return`<div class="pend-item"><span class="pend-dot ${pc}">•</span><span>${p.descricao}</span></div>`;
   }).join('');
 }
+function vesselImage(name){return VESSEL_IMAGES[name]||'';}
 function dashCard(v){
   const sc={ok:'stripe-ok',warn:'stripe-warn',crit:'stripe-critical'}[v.st];
+  const img=vesselImage(v.name);
   return`<div class="vessel-card" onclick="openVessel('${v.name.replace(/'/g,"\\'")}')">
     <div class="vessel-stripe ${sc}"></div>
+    <div class="vessel-photo">
+      ${img?`<img src="${img}" alt="${v.name}" loading="lazy">`:''}
+      <div class="vessel-photo-label">
+        <div class="vessel-photo-name">${v.name}</div>
+        <div class="vessel-photo-rovs">${v.rovs.join(' / ')}</div>
+      </div>
+    </div>
     <div class="vessel-body">
       <div class="vessel-header">
         <div><div class="vessel-name">${v.name}</div><div class="vessel-meta-line">${v.rovs.join(' / ')}</div></div>
