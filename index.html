@@ -54,6 +54,71 @@ body[data-theme="light"]{
   --orange-bg:rgba(234,88,12,.12);
   --blue-bg:rgba(37,99,235,.12);
 }
+body[data-theme="navy"]{
+  --bg-primary:#081526;
+  --bg-secondary:#0d2138;
+  --bg-tertiary:#04101d;
+  --border:#173b61;
+  --border-secondary:#25547f;
+  --text-primary:#e8f3ff;
+  --text-secondary:#a8c3dd;
+  --text-tertiary:#617f9e;
+  --accent:#38bdf8;
+  --accent-bg:rgba(56,189,248,.14);
+  --accent-border:#0284c7;
+}
+body[data-theme="ocean"]{
+  --bg-primary:#062421;
+  --bg-secondary:#0b332f;
+  --bg-tertiary:#031816;
+  --border:#155e56;
+  --border-secondary:#1f7a70;
+  --text-primary:#e6fffb;
+  --text-secondary:#9bd7cf;
+  --text-tertiary:#5b918a;
+  --accent:#2dd4bf;
+  --accent-bg:rgba(45,212,191,.14);
+  --accent-border:#0f766e;
+}
+body[data-theme="forest"]{
+  --bg-primary:#0b1f14;
+  --bg-secondary:#102b1c;
+  --bg-tertiary:#06140c;
+  --border:#1d4d32;
+  --border-secondary:#2f6844;
+  --text-primary:#ecfdf3;
+  --text-secondary:#acd1ba;
+  --text-tertiary:#668873;
+  --accent:#4ade80;
+  --accent-bg:rgba(74,222,128,.14);
+  --accent-border:#16a34a;
+}
+body[data-theme="amber"]{
+  --bg-primary:#21170a;
+  --bg-secondary:#30210d;
+  --bg-tertiary:#120c05;
+  --border:#5f4215;
+  --border-secondary:#7c561b;
+  --text-primary:#fff7ed;
+  --text-secondary:#e2c59a;
+  --text-tertiary:#9a7445;
+  --accent:#f59e0b;
+  --accent-bg:rgba(245,158,11,.16);
+  --accent-border:#d97706;
+}
+body[data-theme="graphite"]{
+  --bg-primary:#18181b;
+  --bg-secondary:#27272a;
+  --bg-tertiary:#0f0f11;
+  --border:#3f3f46;
+  --border-secondary:#52525b;
+  --text-primary:#f4f4f5;
+  --text-secondary:#c4c4cc;
+  --text-tertiary:#71717a;
+  --accent:#a78bfa;
+  --accent-bg:rgba(167,139,250,.14);
+  --accent-border:#8b5cf6;
+}
 body[data-theme="contrast"]{
   --bg-primary:#05080f;
   --bg-secondary:#0a1020;
@@ -82,6 +147,8 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 .btn:hover{background:var(--bg-secondary);color:var(--text-primary);}
 .btn i{font-size:13px;}
 .ui-controls{display:flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:var(--radius-md);padding:3px;background:var(--bg-tertiary);}
+.theme-select{height:26px;min-width:130px;padding:0 8px;border:1px solid var(--border-secondary);border-radius:var(--radius-sm);background:var(--bg-primary);color:var(--text-primary);font-size:11px;font-family:var(--font-sans);outline:none;cursor:pointer;}
+.theme-select:focus{border-color:var(--accent-border);}
 .control-btn{height:26px;min-width:30px;padding:0 8px;border:1px solid transparent;border-radius:var(--radius-sm);background:transparent;color:var(--text-secondary);font-size:11px;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;transition:all .15s;}
 .control-btn:hover{background:var(--bg-secondary);color:var(--text-primary);border-color:var(--border-secondary);}
 .control-btn i{font-size:14px;}
@@ -311,7 +378,16 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
   </div>
   <div class="topbar-right">
     <div class="ui-controls" title="Preferências visuais">
-      <button class="control-btn" onclick="cycleTheme()" id="theme-toggle" title="Mudar tema"><i class="ti ti-moon"></i><span id="theme-label">Escuro</span></button>
+      <select class="theme-select" id="theme-select" onchange="setTheme(this.value)" title="Escolher tema">
+        <option value="dark">Escuro</option>
+        <option value="light">Claro</option>
+        <option value="navy">Azul Operacional</option>
+        <option value="ocean">Oceano</option>
+        <option value="forest">Verde Offshore</option>
+        <option value="amber">Âmbar Técnico</option>
+        <option value="graphite">Grafite</option>
+        <option value="contrast">Alto Contraste</option>
+      </select>
       <button class="control-btn" onclick="changeFontSize(-1)" title="Diminuir fonte"><i class="ti ti-letter-a-small"></i></button>
       <span class="font-indicator" id="font-indicator">100%</span>
       <button class="control-btn" onclick="changeFontSize(1)" title="Aumentar fonte"><i class="ti ti-letter-a"></i></button>
@@ -474,6 +550,7 @@ const VESSEL_IMAGE_POSITIONS={
   'Wildebeest':'center 36%'
 };
 
+const ASSET_VERSION='20260629-v8';
 const CRIT_EQ=['SprintNav','Mini-Beacon','Digiquartz','SVX','Ranger'];
 const ROV_EQ=['SprintNav','Mini-Beacon','Digiquartz','SVX','DVL'];
 const SYS_EQ=['Ranger','HPT','Navipac PC','Ranger PC','NAS','DVR'];
@@ -482,9 +559,14 @@ const PRIO={Crítica:0,Alta:1,Média:2,Baixa:3};
 const FLEET_NAMES=new Set(FLEET.map(f=>f.embarcacao));
 
 const THEME_OPTIONS=[
-  {id:'dark',label:'Escuro',icon:'ti-moon'},
-  {id:'light',label:'Claro',icon:'ti-sun'},
-  {id:'contrast',label:'Contraste',icon:'ti-contrast'}
+  {id:'dark',label:'Escuro'},
+  {id:'light',label:'Claro'},
+  {id:'navy',label:'Azul Operacional'},
+  {id:'ocean',label:'Oceano'},
+  {id:'forest',label:'Verde Offshore'},
+  {id:'amber',label:'Âmbar Técnico'},
+  {id:'graphite',label:'Grafite'},
+  {id:'contrast',label:'Alto Contraste'}
 ];
 const FONT_LEVELS=[
   {label:'90%',zoom:.9},
@@ -500,20 +582,19 @@ function applyTheme(){
   const saved=localStorage.getItem('ci-theme')||'dark';
   const theme=THEME_OPTIONS.find(t=>t.id===saved)||THEME_OPTIONS[0];
   document.body.setAttribute('data-theme',theme.id);
-  const btn=document.getElementById('theme-toggle');
-  const lab=document.getElementById('theme-label');
-  if(btn){
-    const icon=btn.querySelector('i');
-    if(icon)icon.className='ti '+theme.icon;
-  }
-  if(lab)lab.textContent=theme.label;
+  const sel=document.getElementById('theme-select');
+  if(sel)sel.value=theme.id;
+}
+function setTheme(themeId){
+  const theme=THEME_OPTIONS.find(t=>t.id===themeId)||THEME_OPTIONS[0];
+  localStorage.setItem('ci-theme',theme.id);
+  applyTheme();
 }
 function cycleTheme(){
   const current=document.body.getAttribute('data-theme')||localStorage.getItem('ci-theme')||'dark';
   const idx=THEME_OPTIONS.findIndex(t=>t.id===current);
   const next=THEME_OPTIONS[(idx+1+THEME_OPTIONS.length)%THEME_OPTIONS.length];
-  localStorage.setItem('ci-theme',next.id);
-  applyTheme();
+  setTheme(next.id);
 }
 function applyFontSize(){
   const fs=FONT_LEVELS[fontLevel]||FONT_LEVELS[1];
