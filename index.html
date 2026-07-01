@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CI Survey Brasil</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -372,6 +373,36 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 .obs-vessel{font-size:11px;color:var(--accent);font-weight:600;margin-bottom:6px;}
 .obs-meta{font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);margin-top:8px;}
 
+/* MAPA DA FROTA */
+.map-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
+.map-toolbar-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.map-shell{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:12px;align-items:stretch;}
+#fleet-map{height:calc(100vh - 215px);min-height:460px;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;}
+.map-side{height:calc(100vh - 215px);min-height:460px;overflow:auto;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-lg);padding:10px;}
+.map-side::-webkit-scrollbar{width:6px;}.map-side::-webkit-scrollbar-thumb{background:var(--border-secondary);border-radius:8px;}
+.map-side-title{font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;}
+.map-vessel-card{border:1px solid var(--border);border-radius:var(--radius-md);padding:9px 10px;margin-bottom:7px;background:var(--bg-secondary);cursor:pointer;transition:all .15s;}
+.map-vessel-card:hover{border-color:var(--accent-border);transform:translateY(-1px);}
+.map-vessel-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px;}
+.map-vessel-name{font-size:12px;font-weight:700;color:var(--text-primary);}
+.map-vessel-time{font-size:9px;font-family:var(--font-mono);color:var(--text-tertiary);white-space:nowrap;}
+.map-vessel-meta{font-size:10px;color:var(--text-secondary);font-family:var(--font-mono);line-height:1.5;}
+.map-vessel-missing{opacity:.58;}
+.map-empty{height:calc(100vh - 215px);min-height:460px;border:1px dashed var(--border-secondary);border-radius:var(--radius-lg);background:var(--bg-primary);display:flex;align-items:center;justify-content:center;text-align:center;color:var(--text-tertiary);padding:24px;font-size:12px;line-height:1.7;}
+.map-stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px;}
+.map-filter-dropdown{position:relative;}
+.map-filter-menu{display:none;position:absolute;top:38px;left:0;width:310px;max-height:380px;overflow:hidden;background:var(--bg-primary);border:1px solid var(--border-secondary);border-radius:var(--radius-md);box-shadow:0 18px 35px rgba(0,0,0,.35);z-index:500;}
+.map-filter-dropdown.open .map-filter-menu{display:block;}
+.leaflet-container{background:var(--bg-secondary);font-family:var(--font-sans);}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);box-shadow:0 12px 30px rgba(0,0,0,.35);}
+.leaflet-popup-content{font-size:12px;line-height:1.45;}
+.popup-title{font-weight:700;color:var(--text-primary);font-size:13px;margin-bottom:6px;}
+.popup-meta{font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);line-height:1.6;}
+.popup-link{display:inline-block;margin-top:8px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;}
+.fleet-marker{width:18px;height:18px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 3px rgba(0,0,0,.25),0 4px 12px rgba(0,0,0,.45);}
+.fleet-marker.ok{background:var(--green);}.fleet-marker.warn{background:var(--amber);}.fleet-marker.crit{background:var(--red);}.fleet-marker.absent{background:var(--text-tertiary);}
+@media(max-width:1000px){.map-shell{grid-template-columns:1fr;}#fleet-map,.map-side{height:420px;min-height:420px;}.map-side{height:auto;min-height:0;max-height:360px;}}
+
 </style>
 </head>
 <body>
@@ -414,6 +445,7 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 <nav class="nav">
   <div class="nav-item active" onclick="setPage('dashboard')" id="nav-dashboard"><i class="ti ti-layout-dashboard"></i> Visão Geral</div>
   <div class="nav-item" onclick="setPage('matrix')" id="nav-matrix"><i class="ti ti-table"></i> Fleet Matrix</div>
+  <div class="nav-item" onclick="setPage('mapa')" id="nav-mapa"><i class="ti ti-map-2"></i> Mapa da Frota</div>
   <div class="nav-item" onclick="setPage('cert')" id="nav-cert"><i class="ti ti-certificate"></i> Certificações</div>
   <div class="nav-item" onclick="setPage('pendencias')" id="nav-pendencias"><i class="ti ti-clipboard-list"></i> Pendências</div>
   <div class="nav-item" onclick="setPage('observacoes')" id="nav-observacoes"><i class="ti ti-notes"></i> Observações</div>
@@ -460,6 +492,38 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
     </div>
     <div class="matrix-wrap"><table class="matrix-table" id="matrix-table"></table></div>
   </div>
+  <div id="page-mapa" class="page">
+    <div class="page-title"><i class="ti ti-map-2"></i>Mapa da Frota</div>
+    <div class="page-subtitle">Visualização das posições cadastradas na aba Posicoes da planilha. Use o filtro para mostrar todas as embarcações ou apenas uma seleção específica.</div>
+    <div class="map-stat-row" id="map-summary"></div>
+    <div class="map-toolbar">
+      <div class="map-toolbar-left">
+        <div class="map-filter-dropdown" id="mf-dropdown">
+          <button class="filter-trigger" type="button" onclick="toggleMapFilter(event)">
+            <i class="ti ti-ship"></i>
+            <span id="mf-label">Todas as embarcações</span>
+            <i class="ti ti-chevron-down chev"></i>
+          </button>
+          <div class="map-filter-menu" id="mf-menu">
+            <div class="filter-actions">
+              <button class="filter-action-btn" type="button" onclick="selectAllMapVessels(event)">Selecionar todas</button>
+              <button class="filter-action-btn" type="button" onclick="clearAllMapVessels(event)">Limpar seleção</button>
+            </div>
+            <div class="filter-options" id="mf-options"></div>
+          </div>
+        </div>
+        <div class="filter-help" id="mf-help">Mostrando toda a frota</div>
+      </div>
+      <button class="btn" type="button" onclick="fitFleetMap()"><i class="ti ti-focus-centered"></i> Enquadrar frota</button>
+    </div>
+    <div class="map-shell">
+      <div id="fleet-map"></div>
+      <div class="map-side">
+        <div class="map-side-title">Embarcações no mapa</div>
+        <div id="map-list"></div>
+      </div>
+    </div>
+  </div>
   <div id="page-cert" class="page">
     <div class="cert-filters">
       <select class="cert-select" id="cf-v" onchange="renderCert()"><option value="">Todas as embarcações</option></select>
@@ -483,6 +547,7 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
   </div>
 </div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 // ══════════════════════════════════════════
 // CONFIGURAÇÃO — altere apenas esta URL
@@ -633,7 +698,12 @@ const DataService={
   nk(o,...ks){for(const k of ks)if(o[k]!==undefined)return String(o[k]);return'';},
   async getData(){
     if(this._cache)return this._cache;
-    const[ri,rp,ro]=await Promise.all([this.fetch('Inventario'),this.fetch('Pendencias'),this.fetch('Observacoes')]);
+    const[ri,rp,ro,rpos]=await Promise.all([
+      this.fetch('Inventario'),
+      this.fetch('Pendencias'),
+      this.fetch('Observacoes'),
+      this.fetch('Posicoes').catch(()=>[])
+    ]);
     const inventario=ri.map(r=>({
       embarcacao:this.nk(r,'Embarcacao','Embarcação'),
       rov:this.nk(r,'ROV'),
@@ -657,7 +727,24 @@ const DataService={
       texto:this.nk(r,'Texto'),
       data:this.parseDateBR(this.nk(r,'Data')),
     })).filter(r=>r.embarcacao&&r.texto&&FLEET_NAMES.has(r.embarcacao));
-    this._cache={lastUpdate:new Date().toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}),inventario,pendencias,observacoes};
+    const posicoes=rpos.map(r=>{
+      const lat=parseFloat(String(this.nk(r,'Latitude','LAT','Lat')).replace(',','.'));
+      const lon=parseFloat(String(this.nk(r,'Longitude','LON','Lon','Lng')).replace(',','.'));
+      return{
+        embarcacao:this.nk(r,'Embarcacao','Embarcação'),
+        imo:this.nk(r,'IMO'),
+        mmsi:this.nk(r,'MMSI'),
+        latitude:lat,
+        longitude:lon,
+        velocidade:this.nk(r,'Velocidade','SPEED','Speed'),
+        rumo:this.nk(r,'Rumo','COURSE','Course','Heading'),
+        statusAIS:this.nk(r,'StatusAIS','Status AIS','STATUS'),
+        destino:this.nk(r,'Destino','DESTINATION'),
+        eta:this.nk(r,'ETA'),
+        ultimaPosicao:this.nk(r,'UltimaPosicao','Última Posição','Data','TIMESTAMP'),
+      };
+    }).filter(r=>r.embarcacao&&FLEET_NAMES.has(r.embarcacao)&&Number.isFinite(r.latitude)&&Number.isFinite(r.longitude));
+    this._cache={lastUpdate:new Date().toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}),inventario,pendencias,observacoes,posicoes};
     return this._cache;
   },
   invalidate(){this._cache=null;}
@@ -961,6 +1048,121 @@ function renderObservacoesPage(){
 }
 
 
+let fleetMap=null;
+let fleetMapMarkers=[];
+let selectedMapVessels=new Set(FLEET.map(f=>f.embarcacao));
+try{
+  const savedMap=localStorage.getItem('ciSurveyMapSelectedVessels');
+  if(savedMap!==null){
+    const arr=JSON.parse(savedMap);
+    if(Array.isArray(arr))selectedMapVessels=new Set(arr.filter(n=>FLEET_NAMES.has(n)));
+  }
+}catch(e){}
+function saveMapVesselSelection(){try{localStorage.setItem('ciSurveyMapSelectedVessels',JSON.stringify([...selectedMapVessels]));}catch(e){}}
+function toggleMapFilter(ev){ev.stopPropagation();document.getElementById('mf-dropdown').classList.toggle('open');}
+function initMapFilter(){
+  const el=document.getElementById('mf-options');
+  if(!el)return;
+  el.innerHTML=FLEET.map(f=>`<label class="filter-option">
+    <input type="checkbox" value="${f.embarcacao}" ${selectedMapVessels.has(f.embarcacao)?'checked':''} onchange="onMapVesselCheck(this)">
+    <span>${f.embarcacao}</span>
+  </label>`).join('');
+  updateMapFilterLabel();
+}
+function syncMapVesselChecks(){document.querySelectorAll('#mf-options input[type="checkbox"]').forEach(cb=>{cb.checked=selectedMapVessels.has(cb.value);});}
+function onMapVesselCheck(cb){if(cb.checked)selectedMapVessels.add(cb.value);else selectedMapVessels.delete(cb.value);saveMapVesselSelection();renderMapPage();}
+function selectAllMapVessels(ev){if(ev)ev.stopPropagation();selectedMapVessels=new Set(FLEET.map(f=>f.embarcacao));saveMapVesselSelection();syncMapVesselChecks();renderMapPage();}
+function clearAllMapVessels(ev){if(ev)ev.stopPropagation();selectedMapVessels.clear();saveMapVesselSelection();syncMapVesselChecks();renderMapPage();}
+function updateMapFilterLabel(count=null,totalWithPosition=null){
+  const label=document.getElementById('mf-label'),help=document.getElementById('mf-help');
+  if(!label||!help)return;
+  const total=FLEET.length,sel=selectedMapVessels.size;
+  if(sel===total)label.textContent='Todas as embarcações';
+  else if(sel===0)label.textContent='Nenhuma embarcação selecionada';
+  else if(sel===1)label.textContent=[...selectedMapVessels][0];
+  else label.textContent=`${sel} embarcações selecionadas`;
+  const c=count===null?0:count;
+  const tp=totalWithPosition===null?0:totalWithPosition;
+  help.textContent=`Mostrando ${c} embarcação${c!==1?'s':''} no mapa · ${tp} com posição cadastrada`;
+}
+function getMapRows(){
+  const data=DataService._cache;if(!data)return[];
+  return data.posicoes.filter(p=>selectedMapVessels.has(p.embarcacao));
+}
+function statusForVessel(name){const v=allV.find(x=>x.name===name);return v?v.st:'absent';}
+function markerClassForVessel(name){const st=statusForVessel(name);return st==='crit'?'crit':st==='warn'?'warn':st==='ok'?'ok':'absent';}
+function ensureFleetMap(){
+  if(fleetMap||typeof L==='undefined')return fleetMap;
+  const el=document.getElementById('fleet-map');
+  if(!el)return null;
+  fleetMap=L.map(el,{scrollWheelZoom:true}).setView([-22.9,-42.7],6);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'&copy; OpenStreetMap'}).addTo(fleetMap);
+  return fleetMap;
+}
+function clearFleetMarkers(){fleetMapMarkers.forEach(m=>m.remove());fleetMapMarkers=[];}
+function popupHtml(p){
+  return `<div class="popup-title">${p.embarcacao}</div>
+    <div class="popup-meta">
+      ${p.imo?`IMO: ${p.imo}<br>`:''}${p.mmsi?`MMSI: ${p.mmsi}<br>`:''}
+      Lat/Lon: ${p.latitude.toFixed(5)}, ${p.longitude.toFixed(5)}<br>
+      ${p.velocidade?`Velocidade: ${p.velocidade}<br>`:''}${p.rumo?`Rumo: ${p.rumo}<br>`:''}
+      ${p.statusAIS?`Status AIS: ${p.statusAIS}<br>`:''}${p.destino?`Destino: ${p.destino}<br>`:''}${p.eta?`ETA: ${p.eta}<br>`:''}
+      ${p.ultimaPosicao?`Última posição: ${p.ultimaPosicao}`:''}
+    </div>
+    <span class="popup-link" onclick="openVessel('${p.embarcacao.replace(/'/g,"\\'")}')">Abrir detalhe da embarcação</span>`;
+}
+function renderMapPage(){
+  const data=DataService._cache;if(!data)return;
+  initMapFilter();
+  const rows=getMapRows();
+  const totalWithPosition=data.posicoes.length;
+  const missing=FLEET.filter(f=>selectedMapVessels.has(f.embarcacao)&&!data.posicoes.some(p=>p.embarcacao===f.embarcacao));
+  updateMapFilterLabel(rows.length,totalWithPosition);
+  document.getElementById('map-summary').innerHTML=`
+    <div class="info-card"><div class="label">No mapa</div><div class="value">${rows.length}</div></div>
+    <div class="info-card"><div class="label">Com posição</div><div class="value ok">${totalWithPosition}</div></div>
+    <div class="info-card"><div class="label">Sem posição no filtro</div><div class="value warn">${missing.length}</div></div>
+    <div class="info-card"><div class="label">Fonte</div><div class="value" style="font-size:13px;">Planilha</div></div>`;
+  if(typeof L==='undefined'){
+    document.getElementById('fleet-map').outerHTML='<div class="map-empty" id="fleet-map">Não foi possível carregar a biblioteca do mapa. Verifique a conexão e atualize a página.</div>';
+    return;
+  }
+  const map=ensureFleetMap();
+  if(!map)return;
+  setTimeout(()=>map.invalidateSize(),80);
+  clearFleetMarkers();
+  rows.forEach(p=>{
+    const cls=markerClassForVessel(p.embarcacao);
+    const icon=L.divIcon({className:'',html:`<div class="fleet-marker ${cls}"></div>`,iconSize:[18,18],iconAnchor:[9,9]});
+    const marker=L.marker([p.latitude,p.longitude],{icon}).addTo(map).bindPopup(popupHtml(p));
+    fleetMapMarkers.push(marker);
+  });
+  fitFleetMap(false);
+  renderMapList(rows,missing);
+}
+function fitFleetMap(force=true){
+  if(!fleetMap||!fleetMapMarkers.length){if(fleetMap&&force)fleetMap.setView([-22.9,-42.7],6);return;}
+  const group=L.featureGroup(fleetMapMarkers);
+  fleetMap.fitBounds(group.getBounds().pad(.25),{maxZoom:10});
+}
+function renderMapList(rows,missing){
+  const el=document.getElementById('map-list');if(!el)return;
+  let h='';
+  if(!rows.length)h+=`<div class="no-data">Nenhuma posição encontrada para a seleção atual. Preencha a aba Posicoes da planilha ou ajuste o filtro.</div>`;
+  rows.sort((a,b)=>a.embarcacao.localeCompare(b.embarcacao)).forEach((p,idx)=>{
+    h+=`<div class="map-vessel-card" onclick="fleetMapMarkers[${idx}]&&fleetMapMarkers[${idx}].openPopup()">
+      <div class="map-vessel-top"><span class="map-vessel-name">${p.embarcacao}</span><span class="map-vessel-time">${p.ultimaPosicao||'sem data'}</span></div>
+      <div class="map-vessel-meta">${p.velocidade?`Vel.: ${p.velocidade} · `:''}${p.statusAIS||'Status não informado'}<br>${p.destino?`Destino: ${p.destino}`:`Lat/Lon: ${p.latitude.toFixed(3)}, ${p.longitude.toFixed(3)}`}</div>
+    </div>`;
+  });
+  if(missing.length){
+    h+=`<div class="map-side-title" style="margin-top:12px;">Sem posição cadastrada</div>`;
+    missing.forEach(f=>{h+=`<div class="map-vessel-card map-vessel-missing"><div class="map-vessel-name">${f.embarcacao}</div><div class="map-vessel-meta">Sem linha válida na aba Posicoes</div></div>`;});
+  }
+  el.innerHTML=h;
+}
+
+
 let allV=[];
 let currentSearch='';
 let selectedVessels=new Set(FLEET.map(f=>f.embarcacao));
@@ -1069,6 +1271,7 @@ function setPage(p){
   const n=document.getElementById('nav-'+p);if(n)n.classList.add('active');
   document.getElementById('search-bar').style.display=p==='vessel'?'none':'';
   if(p==='dashboard')renderDashboardView();
+  if(p==='mapa')renderMapPage();
   if(p==='cert')renderCert();
   if(p==='pendencias')renderPendenciasPage();
   if(p==='observacoes')renderObservacoesPage();
@@ -1076,6 +1279,8 @@ function setPage(p){
 document.addEventListener('click',function(ev){
   const dd=document.getElementById('vf-dropdown');
   if(dd&&!dd.contains(ev.target))dd.classList.remove('open');
+  const md=document.getElementById('mf-dropdown');
+  if(md&&!md.contains(ev.target))md.classList.remove('open');
 });
 async function loadData(force=false){
   if(force)DataService.invalidate();
@@ -1087,8 +1292,10 @@ async function loadData(force=false){
     document.getElementById('last-update').textContent='Atualizado '+data.lastUpdate;
     allV=buildList(data);
     initVesselFilter();
+    initMapFilter();
     renderDashboardView();
     renderMatrix(data);
+    renderMapPage();
     initCertFilters(data);
     renderPendenciasPage();
     renderObservacoesPage();
