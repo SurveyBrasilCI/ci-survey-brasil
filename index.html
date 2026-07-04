@@ -241,6 +241,8 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 .equip-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:10px;}
 .equip-pill{min-height:25px;font-size:10px;font-family:var(--font-mono);padding:5px 8px;border-radius:3px;display:flex;align-items:center;gap:6px;border:1px solid var(--border);color:var(--text-secondary);font-weight:800;text-transform:uppercase;letter-spacing:.04em;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;box-shadow:inset 0 0 0 1px rgba(255,255,255,.02);}
 .equip-pill .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;box-shadow:0 0 0 2px rgba(255,255,255,.04);}
+.equip-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+.equip-count{margin-left:auto;font-size:9px;font-family:var(--font-mono);font-weight:900;opacity:.95;flex-shrink:0;}
 .dot-ok{background:var(--green);}.dot-warn{background:var(--amber);}.dot-critical{background:var(--red);}.dot-absent{background:var(--border-secondary);}
 .pill-ok{background:rgba(34,197,94,.19);border-color:rgba(34,197,94,.34);color:var(--green);}
 .pill-warn{background:rgba(245,158,11,.20);border-color:rgba(245,158,11,.42);color:var(--amber);}
@@ -767,13 +769,66 @@ function vSt(items){
 }
 function nv(items){return items.filter(i=>i.status!=='Spare').sort((a,b)=>new Date(a.vencimento)-new Date(b.vencimento))[0];}
 
+const CARD_EQ_ORDER=['SprintNav','ROVNAV','Mini-Beacon','SVX','SVX2','DVL','Digiquartz','Ranger','HPT','NAS','Navipac PC','Ranger PC','DVR'];
+
+function cleanKey(v){return String(v||'').trim().toUpperCase();}
+function itemIdentity(i){
+  const serial=cleanKey(i.serie);
+  if(serial)return `${cleanKey(i.equipamento)}|SERIE|${serial}`;
+  return `${cleanKey(i.equipamento)}|ROV|${cleanKey(i.rov)}|MODELO|${cleanKey(i.modelo)}`;
+}
+function pickCurrentItem(a,b){
+  const aInop=String(a.status).toLowerCase()==='inoperante';
+  const bInop=String(b.status).toLowerCase()==='inoperante';
+  if(bInop&&!aInop)return b;
+  if(aInop&&!bInop)return a;
+  const da=new Date(a.vencimento||'1900-01-01');
+  const db=new Date(b.vencimento||'1900-01-01');
+  if(db>da)return b;
+  return a;
+}
+function currentItems(items){
+  const m=new Map();
+  items.filter(i=>i.status!=='Spare').forEach(i=>{
+    const key=itemIdentity(i);
+    m.set(key,m.has(key)?pickCurrentItem(m.get(key),i):i);
+  });
+  return [...m.values()];
+}
+function groupStatus(items){
+  if(items.some(i=>eSt(i)==='crit'))return'crit';
+  if(items.some(i=>eSt(i)==='warn'))return'warn';
+  return'ok';
+}
+function cardEquipmentGroups(items){
+  const groups=new Map();
+  currentItems(items).forEach(i=>{
+    if(!i.equipamento)return;
+    if(!groups.has(i.equipamento))groups.set(i.equipamento,[]);
+    groups.get(i.equipamento).push(i);
+  });
+  const pref=new Map(CARD_EQ_ORDER.map((e,i)=>[e,i]));
+  return [...groups.entries()].map(([name,arr])=>({
+    name,
+    count:arr.length,
+    st:groupStatus(arr)
+  })).sort((a,b)=>{
+    const pa=pref.has(a.name)?pref.get(a.name):999;
+    const pb=pref.has(b.name)?pref.get(b.name):999;
+    if(pa!==pb)return pa-pb;
+    return a.name.localeCompare(b.name,'pt-BR');
+  });
+}
+
 function buildList(data){  return FLEET.map(f=>{
     const its=data.inventario.filter(i=>i.embarcacao===f.embarcacao);
+    const current=currentItems(its);
     const ps=data.pendencias.filter(p=>p.embarcacao===f.embarcacao&&p.status!=='Planejada'&&p.status!=='Concluída')
       .sort((a,b)=>(PRIO[a.prioridade]??9)-(PRIO[b.prioridade]??9)).slice(0,2);
-    const n=nv(its);
-    return{name:f.embarcacao,rovs:f.rovs,st:vSt(its),
-      ceq:CRIT_EQ.map(eq=>{const f2=its.find(i=>i.equipamento===eq&&i.status!=='Spare');return{name:eq,st:f2?eSt(f2):'absent'};}),
+    const n=nv(current);
+    const ceq=cardEquipmentGroups(its);
+    return{name:f.embarcacao,rovs:f.rovs,st:vSt(current),
+      ceq,eqTotal:ceq.reduce((s,e)=>s+e.count,0),
       pends:ps,nv:n,nvd:n?days(n.vencimento):null};
   });
 }
@@ -788,7 +843,8 @@ function pills(ceq){
   return ceq.map(e=>{
     const dc={ok:'dot-ok',warn:'dot-warn',crit:'dot-critical',absent:'dot-absent',spare:'dot-absent'}[e.st];
     const pc={ok:'pill-ok',warn:'pill-warn',crit:'pill-critical',absent:'pill-absent',spare:'pill-absent'}[e.st]||'pill-absent';
-    return`<span class="equip-pill ${pc}"><span class="dot ${dc}"></span>${e.name}</span>`;
+    const qty=e.count>1?`<span class="equip-count">x${e.count}</span>`:'';
+    return`<span class="equip-pill ${pc}" title="${e.name}${e.count>1?' x'+e.count:''}"><span class="dot ${dc}"></span><span class="equip-label">${e.name}</span>${qty}</span>`;
   }).join('');
 }
 function pendsMini(ps){
@@ -806,7 +862,7 @@ function dashCard(v){
   return`<div class="vessel-card" onclick="openVessel('${v.name.replace(/'/g,"\\'")}')">
     <div class="vessel-stripe ${sc}"></div>
     <div class="vessel-photo">
-      ${img?`<img src="${img}" alt="${v.name}" loading="lazy">`:''}
+      ${img?`<img src="${img}?v=${ASSET_VERSION}" alt="${v.name}" loading="lazy" style="object-position:${vesselImagePosition(v.name)};">`:''}
       <div class="vessel-photo-label">
         <div class="vessel-photo-name">${v.name}</div>
         <div class="vessel-photo-rovs">${v.rovs.join(' / ')}</div>
@@ -817,7 +873,7 @@ function dashCard(v){
         <div><div class="vessel-name">${v.name}</div><div class="vessel-meta-line">${v.rovs.join(' / ')}</div></div>
         ${vctoTag(v)}
       </div>
-      <div class="systems-head"><span class="systems-title">Sistemas</span><span class="systems-count">${v.ceq.length} monitorados</span></div>
+      <div class="systems-head"><span class="systems-title">Equipamentos</span><span class="systems-count">${v.ceq.length} tipos · ${v.eqTotal||0} itens</span></div>
       <div class="equip-row">${pills(v.ceq)}</div>
       <div class="pendencias-list">${pendsMini(v.pends)}</div>
     </div>
