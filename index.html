@@ -565,7 +565,7 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 // ══════════════════════════════════════════
 // CONFIGURAÇÃO — altere apenas esta URL
 // ══════════════════════════════════════════
-const APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycby6pK_p1bYMdux2CDHHzF8bFU0Cs3lVsORKCTcicEqfM_cd3-zKGbBo6F1GqtMNLwV3/exec';
+const APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycbwZ7r2xgViujoGj-vqM5mWKmv1NE8CPOc9Y_gPw1BgP8V4d078xzm_SYasVkcQulAI9/exec';
 const AUTO_REFRESH_MS=10*60*1000;
 
 const FLEET=[
@@ -699,9 +699,17 @@ const DataService={
     const url=`${APPS_SCRIPT_URL}?sheet=${encodeURIComponent(sheet)}&_=${Date.now()}`;
     const r=await fetch(url,{cache:'no-store'});
     if(!r.ok)throw new Error(`HTTP ${r.status} na aba "${sheet}"`);
-    const j=await r.json();
+    const text=await r.text();
+    const j=JSON.parse(text.replace(/^\uFEFF/,''));
     if(!Array.isArray(j))throw new Error(`Resposta inválida da aba "${sheet}"`);
     return j;
+  },
+  parseCoordinate(v,maxAbs){
+    if(v===undefined||v===null||v==='')return NaN;
+    let n=Number(String(v).trim().replace(',','.'));
+    if(!Number.isFinite(n))return NaN;
+    while(Math.abs(n)>maxAbs&&Math.abs(n)>=10)n=n/10;
+    return n;
   },
   parseDateBR(v){
     if(!v)return'';
@@ -744,8 +752,8 @@ const DataService={
       data:this.parseDateBR(this.nk(r,'Data')),
     })).filter(r=>r.embarcacao&&r.texto&&FLEET_NAMES.has(r.embarcacao));
     const posicoes=rpos.map(r=>{
-      const lat=parseFloat(String(this.nk(r,'Latitude','LAT','Lat')).replace(',','.'));
-      const lon=parseFloat(String(this.nk(r,'Longitude','LON','Lon','Lng')).replace(',','.'));
+      const lat=this.parseCoordinate(this.nk(r,'Latitude','LAT','Lat'),90);
+      const lon=this.parseCoordinate(this.nk(r,'Longitude','LON','Lon','Lng'),180);
       return{
         embarcacao:this.nk(r,'Embarcacao','Embarcação'),
         imo:this.nk(r,'IMO'),
@@ -761,8 +769,8 @@ const DataService={
       };
     }).filter(r=>r.embarcacao&&FLEET_NAMES.has(r.embarcacao)&&Number.isFinite(r.latitude)&&Number.isFinite(r.longitude));
     const plataformas=rplat.map(r=>{
-      const lat=parseFloat(String(this.nk(r,'Latitude','LAT','Lat','[LATITUDE]')).replace(',','.'));
-      const lon=parseFloat(String(this.nk(r,'Longitude','LON','Lon','Lng','[LONGITUDE]')).replace(',','.'));
+      const lat=this.parseCoordinate(this.nk(r,'Latitude','LAT','Lat','[LATITUDE]'),90);
+      const lon=this.parseCoordinate(this.nk(r,'Longitude','LON','Lon','Lng','[LONGITUDE]'),180);
       return{
         sigla:this.nk(r,'Sigla','SIGLA','[SIGLA DA INSTALAÇÃO]'),
         nome:this.nk(r,'Nome','NomeInstalacao','Instalacao','[NOME DA INSTALAÇÃO]'),
