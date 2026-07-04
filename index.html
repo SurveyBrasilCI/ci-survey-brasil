@@ -405,7 +405,7 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 .fleet-marker{width:14px;height:14px;border-radius:50%;background:#00A3E0;border:2px solid #D7F4FF;box-shadow:0 0 0 3px rgba(0,54,82,.28),0 4px 12px rgba(0,0,0,.45);flex:0 0 auto;}
 .fleet-marker-label{padding:2px 6px;border-radius:999px;background:rgba(7,16,34,.92);border:1px solid rgba(0,163,224,.42);color:#D9F3FF;font-size:10px;font-weight:700;line-height:1.2;letter-spacing:.03em;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.28);} 
 .fleet-marker-icon{background:transparent;border:none !important;}
-.platform-marker{width:12px;height:12px;transform:rotate(45deg);background:#38bdf8;border:2px solid #e0f7ff;box-shadow:0 0 0 3px rgba(56,189,248,.22),0 4px 12px rgba(0,0,0,.38);}
+.platform-marker{width:8px;height:8px;border-radius:50%;background:#050505;border:1px solid rgba(255,255,255,.85);box-shadow:0 0 0 2px rgba(0,0,0,.20),0 2px 8px rgba(0,0,0,.35);}
 .platform-marker-icon{background:transparent;border:none !important;}
 .map-layer-toggle{height:32px;padding:0 10px;border:1px solid var(--border-secondary);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-secondary);font-size:12px;font-family:var(--font-sans);display:flex;align-items:center;gap:7px;cursor:pointer;}
 .map-layer-toggle:hover{border-color:var(--accent-border);color:var(--text-primary);}
@@ -1236,8 +1236,8 @@ function renderPlatformMarkers(map,plataformas){
     const icon=L.divIcon({
       className:'platform-marker-icon',
       html:'<div class="platform-marker"></div>',
-      iconSize:[16,16],
-      iconAnchor:[8,8]
+      iconSize:[10,10],
+      iconAnchor:[5,5]
     });
     const marker=L.marker([p.latitude,p.longitude],{icon}).addTo(map).bindPopup(platformPopupHtml(p));
     platformMapMarkers.push(marker);
@@ -1279,8 +1279,8 @@ function renderMapPage(){
   fitFleetMap(false);
   renderMapList(rows,missing,plataformas);
 }
-function fitFleetMap(force=true){
-  const markers=[...fleetMapMarkers,...platformMapMarkers];
+function fitFleetMap(force=true,includePlatforms=false){
+  const markers=includePlatforms?[...fleetMapMarkers,...platformMapMarkers]:fleetMapMarkers;
   if(!fleetMap||!markers.length){if(fleetMap&&force)fleetMap.setView([-22.9,-42.7],6);return;}
   const group=L.featureGroup(markers);
   fleetMap.fitBounds(group.getBounds().pad(.25),{maxZoom:10});
