@@ -405,6 +405,11 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 .fleet-marker{width:14px;height:14px;border-radius:50%;background:#00A3E0;border:2px solid #D7F4FF;box-shadow:0 0 0 3px rgba(0,54,82,.28),0 4px 12px rgba(0,0,0,.45);flex:0 0 auto;}
 .fleet-marker-label{padding:2px 6px;border-radius:999px;background:rgba(7,16,34,.92);border:1px solid rgba(0,163,224,.42);color:#D9F3FF;font-size:10px;font-weight:700;line-height:1.2;letter-spacing:.03em;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.28);} 
 .fleet-marker-icon{background:transparent;border:none !important;}
+.platform-marker{width:12px;height:12px;transform:rotate(45deg);background:#38bdf8;border:2px solid #e0f7ff;box-shadow:0 0 0 3px rgba(56,189,248,.22),0 4px 12px rgba(0,0,0,.38);}
+.platform-marker-icon{background:transparent;border:none !important;}
+.map-layer-toggle{height:32px;padding:0 10px;border:1px solid var(--border-secondary);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-secondary);font-size:12px;font-family:var(--font-sans);display:flex;align-items:center;gap:7px;cursor:pointer;}
+.map-layer-toggle:hover{border-color:var(--accent-border);color:var(--text-primary);}
+.map-layer-toggle input{accent-color:var(--accent);}
 @media(max-width:1000px){.map-shell{grid-template-columns:1fr;}#fleet-map,.map-side{height:420px;min-height:420px;}.map-side{height:auto;min-height:0;max-height:360px;}}
 
 </style>
@@ -517,6 +522,10 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
           </div>
         </div>
         <div class="filter-help" id="mf-help">Mostrando toda a frota</div>
+        <label class="map-layer-toggle" title="Mostrar plataformas de operação no mapa">
+          <input type="checkbox" id="platform-layer-toggle" checked onchange="togglePlatformsLayer(this.checked)">
+          Plataformas
+        </label>
       </div>
       <button class="btn" type="button" onclick="fitFleetMap()"><i class="ti ti-focus-centered"></i> Enquadrar frota</button>
     </div>
@@ -557,6 +566,7 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 // CONFIGURAÇÃO — altere apenas esta URL
 // ══════════════════════════════════════════
 const APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycby6pK_p1bYMdux2CDHHzF8bFU0Cs3lVsORKCTcicEqfM_cd3-zKGbBo6F1GqtMNLwV3/exec';
+const AUTO_REFRESH_MS=10*60*1000;
 
 const FLEET=[
   {embarcacao:'Bongo',rovs:['UHD73','UHD74']},
@@ -629,7 +639,7 @@ const CRIT_EQ=['SprintNav','Mini-Beacon','SVX','Digiquartz','Ranger','HPT'];
 const ROV_EQ=['SprintNav','Mini-Beacon','Digiquartz','SVX','DVL'];
 const SYS_EQ=['Ranger','HPT','Navipac PC','Ranger PC','NAS','DVR'];
 const SPLIT_EQ=new Set(['SprintNav','Mini-Beacon','Digiquartz','SVX','DVL']);
-const PRIO={Crítica:0,Alta:1,Média:2,Baixa:3};
+const PRIO={"Crítica":0,Alta:1,"Média":2,Baixa:3};
 const FLEET_NAMES=new Set(FLEET.map(f=>f.embarcacao));
 
 const THEME_OPTIONS=[
@@ -686,7 +696,8 @@ function changeFontSize(delta){
 const DataService={
   _cache:null,
   async fetch(sheet){
-    const r=await fetch(`${APPS_SCRIPT_URL}?sheet=${encodeURIComponent(sheet)}`);
+    const url=`${APPS_SCRIPT_URL}?sheet=${encodeURIComponent(sheet)}&_=${Date.now()}`;
+    const r=await fetch(url,{cache:'no-store'});
     if(!r.ok)throw new Error(`HTTP ${r.status} na aba "${sheet}"`);
     const j=await r.json();
     if(!Array.isArray(j))throw new Error(`Resposta inválida da aba "${sheet}"`);
@@ -702,11 +713,12 @@ const DataService={
   nk(o,...ks){for(const k of ks)if(o[k]!==undefined)return String(o[k]);return'';},
   async getData(){
     if(this._cache)return this._cache;
-    const[ri,rp,ro,rpos]=await Promise.all([
+    const[ri,rp,ro,rpos,rplat]=await Promise.all([
       this.fetch('Inventario'),
       this.fetch('Pendencias'),
       this.fetch('Observacoes'),
-      this.fetch('Posicoes').catch(()=>[])
+      this.fetch('Posicoes').catch(()=>[]),
+      this.fetch('Plataformas').catch(()=>[])
     ]);
     const inventario=ri.map(r=>({
       embarcacao:this.nk(r,'Embarcacao','Embarcação'),
@@ -748,7 +760,25 @@ const DataService={
         ultimaPosicao:this.nk(r,'UltimaPosicao','Última Posição','Data','TIMESTAMP'),
       };
     }).filter(r=>r.embarcacao&&FLEET_NAMES.has(r.embarcacao)&&Number.isFinite(r.latitude)&&Number.isFinite(r.longitude));
-    this._cache={lastUpdate:new Date().toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}),inventario,pendencias,observacoes,posicoes};
+    const plataformas=rplat.map(r=>{
+      const lat=parseFloat(String(this.nk(r,'Latitude','LAT','Lat','[LATITUDE]')).replace(',','.'));
+      const lon=parseFloat(String(this.nk(r,'Longitude','LON','Lon','Lng','[LONGITUDE]')).replace(',','.'));
+      return{
+        sigla:this.nk(r,'Sigla','SIGLA','[SIGLA DA INSTALAÇÃO]'),
+        nome:this.nk(r,'Nome','NomeInstalacao','Instalacao','[NOME DA INSTALAÇÃO]'),
+        campos:this.nk(r,'Campos','Campo','[CAMPOS]'),
+        bacia:this.nk(r,'Bacia','[BACIA]'),
+        operador:this.nk(r,'Operador','[OPERADOR]'),
+        classificacao:this.nk(r,'Classificacao','Classificação','[CLASSIFICAÇÃO]'),
+        laminaAgua:this.nk(r,'LaminaAguaM',"Lâmina d'água (m)","[LÂMINA D'ÁGUA (m)]"),
+        anoInicio:this.nk(r,'AnoInicioOperacao','Ano Início Operação','[ANO DE INÍCIO DE OPERAÇÃO]'),
+        capacidadePetroleo:this.nk(r,'CapacidadePetroleoBblDia','[CAPACIDADE DE PRODUÇÃO DE PETRÓLEO (bbl/d)]'),
+        capacidadeGas:this.nk(r,'CapacidadeGasMilM3Dia','[CAPACIDADE DE PRODUÇÃO DE GÁS NATURAL (Mil m³/d)]'),
+        latitude:lat,
+        longitude:lon,
+      };
+    }).filter(r=>r.nome&&Number.isFinite(r.latitude)&&Number.isFinite(r.longitude));
+    this._cache={lastUpdate:new Date().toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}),inventario,pendencias,observacoes,posicoes,plataformas};
     return this._cache;
   },
   invalidate(){this._cache=null;}
@@ -1108,7 +1138,9 @@ function renderObservacoesPage(){
 
 let fleetMap=null;
 let fleetMapMarkers=[];
+let platformMapMarkers=[];
 let selectedMapVessels=new Set(FLEET.map(f=>f.embarcacao));
+let showPlatforms=localStorage.getItem('ciSurveyShowPlatforms')!=='false';
 try{
   const savedMap=localStorage.getItem('ciSurveyMapSelectedVessels');
   if(savedMap!==null){
@@ -1158,6 +1190,12 @@ function ensureFleetMap(){
   return fleetMap;
 }
 function clearFleetMarkers(){fleetMapMarkers.forEach(m=>m.remove());fleetMapMarkers=[];}
+function clearPlatformMarkers(){platformMapMarkers.forEach(m=>m.remove());platformMapMarkers=[];}
+function togglePlatformsLayer(checked){
+  showPlatforms=!!checked;
+  localStorage.setItem('ciSurveyShowPlatforms',showPlatforms?'true':'false');
+  renderMapPage();
+}
 function popupHtml(p){
   return `<div class="popup-title">${p.embarcacao}</div>
     <div class="popup-meta">
@@ -1169,10 +1207,41 @@ function popupHtml(p){
     </div>
     <span class="popup-link" onclick="openVessel('${p.embarcacao.replace(/'/g,"\\'")}')">Abrir detalhe da embarcação</span>`;
 }
+function platformPopupHtml(p){
+  return `<div class="popup-title">${p.nome}</div>
+    <div class="popup-meta">
+      ${p.sigla?`Sigla: ${p.sigla}<br>`:''}
+      ${p.bacia?`Bacia: ${p.bacia}<br>`:''}
+      ${p.campos?`Campos: ${p.campos}<br>`:''}
+      ${p.operador?`Operador: ${p.operador}<br>`:''}
+      Lat/Lon: ${p.latitude.toFixed(5)}, ${p.longitude.toFixed(5)}<br>
+      ${p.laminaAgua?`Lamina d'agua: ${p.laminaAgua} m<br>`:''}
+      ${p.anoInicio?`Inicio de operacao: ${p.anoInicio}<br>`:''}
+      ${p.capacidadePetroleo?`Petroleo: ${p.capacidadePetroleo} bbl/d<br>`:''}
+      ${p.capacidadeGas?`Gas: ${p.capacidadeGas} mil m3/d`:''}
+    </div>`;
+}
+function renderPlatformMarkers(map,plataformas){
+  clearPlatformMarkers();
+  if(!showPlatforms)return;
+  plataformas.forEach(p=>{
+    const icon=L.divIcon({
+      className:'platform-marker-icon',
+      html:'<div class="platform-marker"></div>',
+      iconSize:[16,16],
+      iconAnchor:[8,8]
+    });
+    const marker=L.marker([p.latitude,p.longitude],{icon}).addTo(map).bindPopup(platformPopupHtml(p));
+    platformMapMarkers.push(marker);
+  });
+}
 function renderMapPage(){
   const data=DataService._cache;if(!data)return;
   initMapFilter();
+  const toggle=document.getElementById('platform-layer-toggle');
+  if(toggle)toggle.checked=showPlatforms;
   const rows=getMapRows();
+  const plataformas=data.plataformas||[];
   const totalWithPosition=data.posicoes.length;
   const missing=FLEET.filter(f=>selectedMapVessels.has(f.embarcacao)&&!data.posicoes.some(p=>p.embarcacao===f.embarcacao));
   updateMapFilterLabel(rows.length,totalWithPosition);
@@ -1180,7 +1249,7 @@ function renderMapPage(){
     <div class="info-card"><div class="label">No mapa</div><div class="value">${rows.length}</div></div>
     <div class="info-card"><div class="label">Com posição</div><div class="value ok">${totalWithPosition}</div></div>
     <div class="info-card"><div class="label">Sem posição no filtro</div><div class="value warn">${missing.length}</div></div>
-    <div class="info-card"><div class="label">Fonte</div><div class="value" style="font-size:13px;">Planilha</div></div>`;
+    <div class="info-card"><div class="label">Plataformas</div><div class="value" style="font-size:18px;">${showPlatforms?plataformas.length:0}</div></div>`;
   if(typeof L==='undefined'){
     document.getElementById('fleet-map').outerHTML='<div class="map-empty" id="fleet-map">Não foi possível carregar a biblioteca do mapa. Verifique a conexão e atualize a página.</div>';
     return;
@@ -1198,15 +1267,17 @@ function renderMapPage(){
     const marker=L.marker([p.latitude,p.longitude],{icon}).addTo(map).bindPopup(popupHtml(p));
     fleetMapMarkers.push(marker);
   });
+  renderPlatformMarkers(map,plataformas);
   fitFleetMap(false);
-  renderMapList(rows,missing);
+  renderMapList(rows,missing,plataformas);
 }
 function fitFleetMap(force=true){
-  if(!fleetMap||!fleetMapMarkers.length){if(fleetMap&&force)fleetMap.setView([-22.9,-42.7],6);return;}
-  const group=L.featureGroup(fleetMapMarkers);
+  const markers=[...fleetMapMarkers,...platformMapMarkers];
+  if(!fleetMap||!markers.length){if(fleetMap&&force)fleetMap.setView([-22.9,-42.7],6);return;}
+  const group=L.featureGroup(markers);
   fleetMap.fitBounds(group.getBounds().pad(.25),{maxZoom:10});
 }
-function renderMapList(rows,missing){
+function renderMapList(rows,missing,plataformas=[]){
   const el=document.getElementById('map-list');if(!el)return;
   let h='';
   if(!rows.length)h+=`<div class="no-data">Nenhuma posição encontrada para a seleção atual. Preencha a aba Posicoes da planilha ou ajuste o filtro.</div>`;
@@ -1220,11 +1291,22 @@ function renderMapList(rows,missing){
     h+=`<div class="map-side-title" style="margin-top:12px;">Sem posição cadastrada</div>`;
     missing.forEach(f=>{h+=`<div class="map-vessel-card map-vessel-missing"><div class="map-vessel-name">${f.embarcacao}</div><div class="map-vessel-meta">Sem linha válida na aba Posicoes</div></div>`;});
   }
+  if(showPlatforms&&plataformas.length){
+    h+=`<div class="map-side-title" style="margin-top:12px;">Plataformas</div>`;
+    plataformas.forEach((p,idx)=>{
+      h+=`<div class="map-vessel-card" onclick="platformMapMarkers[${idx}]&&platformMapMarkers[${idx}].openPopup()">
+        <div class="map-vessel-top"><span class="map-vessel-name">${p.nome}</span><span class="map-vessel-time">${p.sigla||''}</span></div>
+        <div class="map-vessel-meta">${p.bacia||'Bacia nao informada'}${p.campos?` Â· ${p.campos}`:''}<br>Lat/Lon: ${p.latitude.toFixed(3)}, ${p.longitude.toFixed(3)}</div>
+      </div>`;
+    });
+  }
   el.innerHTML=h;
 }
 
 
 let allV=[];
+let isLoadingData=false;
+let autoRefreshTimer=null;
 let currentSearch='';
 let selectedVessels=new Set(FLEET.map(f=>f.embarcacao));
 try{
@@ -1343,11 +1425,15 @@ document.addEventListener('click',function(ev){
   const md=document.getElementById('mf-dropdown');
   if(md&&!md.contains(ev.target))md.classList.remove('open');
 });
-async function loadData(force=false){
+async function loadData(force=false,silent=false){
+  if(isLoadingData)return;
+  isLoadingData=true;
   if(force)DataService.invalidate();
-  document.getElementById('load-state').style.display='flex';
-  document.getElementById('dashboard-content').style.display='none';
-  document.getElementById('last-update').textContent='Carregando...';
+  if(!silent){
+    document.getElementById('load-state').style.display='flex';
+    document.getElementById('dashboard-content').style.display='none';
+    document.getElementById('last-update').textContent='Carregando...';
+  }
   try{
     const data=await DataService.getData();
     document.getElementById('last-update').textContent='Atualizado '+data.lastUpdate;
@@ -1363,16 +1449,30 @@ async function loadData(force=false){
     document.getElementById('load-state').style.display='none';
     document.getElementById('dashboard-content').style.display='block';
   }catch(e){
-    document.getElementById('load-state').innerHTML=`<div class="error-box">
+    if(silent){
+      console.warn('Falha na atualizacao automatica:',e);
+    }else{
+      document.getElementById('load-state').innerHTML=`<div class="error-box">
       <strong>Erro ao conectar com a planilha</strong><br>${e.message}<br><br>
       Verifique se o Apps Script está publicado com acesso <em>Qualquer pessoa</em>.
       <br><br><button class="btn" onclick="loadData(true)" style="margin-top:8px;"><i class="ti ti-refresh"></i> Tentar novamente</button>
     </div>`;
+    }
+  }finally{
+    isLoadingData=false;
   }
+}
+function startAutoRefresh(){
+  if(autoRefreshTimer)clearInterval(autoRefreshTimer);
+  autoRefreshTimer=setInterval(()=>{
+    if(document.hidden)return;
+    loadData(true,true);
+  },AUTO_REFRESH_MS);
 }
 applyTheme();
 applyFontSize();
 loadData();
+startAutoRefresh();
 </script>
 </body>
 </html>
