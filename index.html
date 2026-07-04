@@ -401,8 +401,10 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 .popup-title{font-weight:700;color:var(--text-primary);font-size:13px;margin-bottom:6px;}
 .popup-meta{font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);line-height:1.6;}
 .popup-link{display:inline-block;margin-top:8px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;}
-.fleet-marker{width:18px;height:18px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 3px rgba(0,0,0,.25),0 4px 12px rgba(0,0,0,.45);}
-.fleet-marker.ok{background:var(--green);}.fleet-marker.warn{background:var(--amber);}.fleet-marker.crit{background:var(--red);}.fleet-marker.absent{background:var(--text-tertiary);}
+.fleet-marker-wrap{display:flex;align-items:center;gap:6px;}
+.fleet-marker{width:14px;height:14px;border-radius:50%;background:#00A3E0;border:2px solid #D7F4FF;box-shadow:0 0 0 3px rgba(0,54,82,.28),0 4px 12px rgba(0,0,0,.45);flex:0 0 auto;}
+.fleet-marker-label{padding:2px 6px;border-radius:999px;background:rgba(7,16,34,.92);border:1px solid rgba(0,163,224,.42);color:#D9F3FF;font-size:10px;font-weight:700;line-height:1.2;letter-spacing:.03em;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.28);} 
+.fleet-marker-icon{background:transparent;border:none !important;}
 @media(max-width:1000px){.map-shell{grid-template-columns:1fr;}#fleet-map,.map-side{height:420px;min-height:420px;}.map-side{height:auto;min-height:0;max-height:360px;}}
 
 </style>
@@ -1188,8 +1190,11 @@ function renderMapPage(){
   setTimeout(()=>map.invalidateSize(),80);
   clearFleetMarkers();
   rows.forEach(p=>{
-    const cls=markerClassForVessel(p.embarcacao);
-    const icon=L.divIcon({className:'',html:`<div class="fleet-marker ${cls}"></div>`,iconSize:[18,18],iconAnchor:[9,9]});
+    const icon=L.divIcon({
+      className:'fleet-marker-icon',
+      html:`<div class="fleet-marker-wrap"><div class="fleet-marker"></div><div class="fleet-marker-label">${p.embarcacao}</div></div>`,
+      iconAnchor:[7,7]
+    });
     const marker=L.marker([p.latitude,p.longitude],{icon}).addTo(map).bindPopup(popupHtml(p));
     fleetMapMarkers.push(marker);
   });
