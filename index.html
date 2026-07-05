@@ -402,8 +402,8 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 .popup-meta{font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);line-height:1.6;}
 .popup-link{display:inline-block;margin-top:8px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;}
 .fleet-marker-wrap{display:flex;align-items:center;gap:6px;}
-.fleet-marker{width:14px;height:14px;border-radius:50%;background:#00A3E0;border:2px solid #D7F4FF;box-shadow:0 0 0 3px rgba(0,54,82,.28),0 4px 12px rgba(0,0,0,.45);flex:0 0 auto;}
-.fleet-marker-label{padding:2px 6px;border-radius:999px;background:rgba(7,16,34,.92);border:1px solid rgba(0,163,224,.42);color:#D9F3FF;font-size:10px;font-weight:700;line-height:1.2;letter-spacing:.03em;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.28);} 
+.fleet-marker{width:14px;height:14px;border-radius:50%;background:#002f6c;border:2px solid #d7e7ff;box-shadow:0 0 0 3px rgba(0,47,108,.34),0 4px 12px rgba(0,0,0,.45);flex:0 0 auto;}
+.fleet-marker-label{padding:2px 6px;border-radius:999px;background:rgba(7,16,34,.92);border:1px solid rgba(0,47,108,.55);color:#D9F3FF;font-size:10px;font-weight:700;line-height:1.2;letter-spacing:.03em;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.28);} 
 .fleet-marker-icon{background:transparent;border:none !important;}
 .platform-marker{width:9px;height:9px;border-radius:50%;background:#050505;border:1px solid rgba(255,255,255,.9);box-shadow:0 0 0 2px rgba(0,0,0,.20),0 2px 8px rgba(0,0,0,.35);}
 .platform-marker-icon{background:transparent;border:none !important;}
@@ -1236,7 +1236,7 @@ function platformMarkerStyle(operador){
   if(op.includes('PETROBRAS')||op.includes('PETROLEO BRASILEIRO')){
     return 'background:#050505;border-color:#ffffff;box-shadow:0 0 0 2px rgba(0,0,0,.32),0 2px 8px rgba(0,0,0,.35);';
   }
-  if(op.includes('KAROON'))return 'background:#002f6c;border-color:#d7e7ff;box-shadow:0 0 0 2px rgba(0,47,108,.32),0 2px 8px rgba(0,0,0,.35);';
+  if(op.includes('KAROON'))return 'background:#00A3E0;border-color:#D7F4FF;box-shadow:0 0 0 2px rgba(0,163,224,.34),0 2px 8px rgba(0,0,0,.35);';
   if(op.includes('EQUINOR'))return 'background:#e30613;border-color:#ffd4d6;box-shadow:0 0 0 2px rgba(227,6,19,.30),0 2px 8px rgba(0,0,0,.35);';
   if(op.includes('SHELL'))return 'background:#f58220;border-color:#ffe1bf;box-shadow:0 0 0 2px rgba(245,130,32,.32),0 2px 8px rgba(0,0,0,.35);';
   if(op.includes('BRAVA'))return 'background:#159447;border-color:#d7f6e2;box-shadow:0 0 0 2px rgba(21,148,71,.30),0 2px 8px rgba(0,0,0,.35);';
