@@ -1329,7 +1329,6 @@ function renderMapPage(){
   }
   const map=ensureFleetMap();
   if(!map)return;
-  setTimeout(()=>map.invalidateSize(),80);
   clearFleetMarkers();
   rows.forEach(p=>{
     const icon=L.divIcon({
@@ -1341,7 +1340,10 @@ function renderMapPage(){
     fleetMapMarkers.push(marker);
   });
   renderPlatformMarkers(map,plataformas);
-  fitFleetMap(false);
+  setTimeout(()=>{
+    map.invalidateSize();
+    fitFleetMap(true,false);
+  },100);
   renderMapList(rows,missing,plataformas);
 }
 function fitFleetMap(force=true,includePlatforms=false){
