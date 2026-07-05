@@ -779,9 +779,6 @@ const DataService={
         operador:this.nk(r,'Operador','[OPERADOR]'),
         classificacao:this.nk(r,'Classificacao','Classificação','[CLASSIFICAÇÃO]'),
         laminaAgua:this.nk(r,'LaminaAguaM',"Lâmina d'água (m)","[LÂMINA D'ÁGUA (m)]"),
-        anoInicio:this.nk(r,'AnoInicioOperacao','Ano Início Operação','[ANO DE INÍCIO DE OPERAÇÃO]'),
-        capacidadePetroleo:this.nk(r,'CapacidadePetroleoBblDia','[CAPACIDADE DE PRODUÇÃO DE PETRÓLEO (bbl/d)]'),
-        capacidadeGas:this.nk(r,'CapacidadeGasMilM3Dia','[CAPACIDADE DE PRODUÇÃO DE GÁS NATURAL (Mil m³/d)]'),
         latitude:lat,
         longitude:lon,
       };
@@ -1195,6 +1192,8 @@ function ensureFleetMap(){
   const el=document.getElementById('fleet-map');
   if(!el)return null;
   fleetMap=L.map(el,{scrollWheelZoom:true}).setView([-22.9,-42.7],6);
+  fleetMap.createPane('platformRanges');
+  fleetMap.getPane('platformRanges').style.zIndex=410;
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'&copy; OpenStreetMap'}).addTo(fleetMap);
   return fleetMap;
 }
@@ -1238,20 +1237,22 @@ function renderPlatformMarkers(map,plataformas){
   plataformas.forEach(p=>{
     const circle1500=L.circle([p.latitude,p.longitude],{
       radius:1500,
+      pane:'platformRanges',
       color:'#050505',
-      weight:1,
-      opacity:.32,
+      weight:2,
+      opacity:.5,
       fillColor:'#050505',
-      fillOpacity:.035,
+      fillOpacity:.025,
       interactive:false
     }).addTo(map);
     const circle500=L.circle([p.latitude,p.longitude],{
       radius:500,
+      pane:'platformRanges',
       color:'#050505',
-      weight:1,
-      opacity:.48,
+      weight:2,
+      opacity:.8,
       fillColor:'#050505',
-      fillOpacity:.07,
+      fillOpacity:.055,
       interactive:false
     }).addTo(map);
     platformRangeCircles.push(circle1500,circle500);
