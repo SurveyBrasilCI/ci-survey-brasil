@@ -1147,6 +1147,7 @@ function renderObservacoesPage(){
 let fleetMap=null;
 let fleetMapMarkers=[];
 let platformMapMarkers=[];
+let platformRangeCircles=[];
 let selectedMapVessels=new Set(FLEET.map(f=>f.embarcacao));
 let showPlatforms=localStorage.getItem('ciSurveyShowPlatforms')!=='false';
 try{
@@ -1198,7 +1199,12 @@ function ensureFleetMap(){
   return fleetMap;
 }
 function clearFleetMarkers(){fleetMapMarkers.forEach(m=>m.remove());fleetMapMarkers=[];}
-function clearPlatformMarkers(){platformMapMarkers.forEach(m=>m.remove());platformMapMarkers=[];}
+function clearPlatformMarkers(){
+  platformMapMarkers.forEach(m=>m.remove());
+  platformRangeCircles.forEach(c=>c.remove());
+  platformMapMarkers=[];
+  platformRangeCircles=[];
+}
 function togglePlatformsLayer(checked){
   showPlatforms=!!checked;
   localStorage.setItem('ciSurveyShowPlatforms',showPlatforms?'true':'false');
@@ -1223,16 +1229,32 @@ function platformPopupHtml(p){
       ${p.campos?`Campos: ${p.campos}<br>`:''}
       ${p.operador?`Operador: ${p.operador}<br>`:''}
       Lat/Lon: ${p.latitude.toFixed(5)}, ${p.longitude.toFixed(5)}<br>
-      ${p.laminaAgua?`Lamina d'agua: ${p.laminaAgua} m<br>`:''}
-      ${p.anoInicio?`Inicio de operacao: ${p.anoInicio}<br>`:''}
-      ${p.capacidadePetroleo?`Petroleo: ${p.capacidadePetroleo} bbl/d<br>`:''}
-      ${p.capacidadeGas?`Gas: ${p.capacidadeGas} mil m3/d`:''}
+      ${p.laminaAgua?`Lamina d'agua: ${p.laminaAgua} m`:''}
     </div>`;
 }
 function renderPlatformMarkers(map,plataformas){
   clearPlatformMarkers();
   if(!showPlatforms)return;
   plataformas.forEach(p=>{
+    const circle1500=L.circle([p.latitude,p.longitude],{
+      radius:1500,
+      color:'#050505',
+      weight:1,
+      opacity:.32,
+      fillColor:'#050505',
+      fillOpacity:.035,
+      interactive:false
+    }).addTo(map);
+    const circle500=L.circle([p.latitude,p.longitude],{
+      radius:500,
+      color:'#050505',
+      weight:1,
+      opacity:.48,
+      fillColor:'#050505',
+      fillOpacity:.07,
+      interactive:false
+    }).addTo(map);
+    platformRangeCircles.push(circle1500,circle500);
     const icon=L.divIcon({
       className:'platform-marker-icon',
       html:'<div class="platform-marker"></div>',
@@ -1302,10 +1324,11 @@ function renderMapList(rows,missing,plataformas=[]){
   if(showPlatforms&&plataformas.length){
     h+=`<div class="map-side-title" style="margin-top:12px;">Plataformas</div>`;
     plataformas.forEach((p,idx)=>{
-      h+=`<div class="map-vessel-card" onclick="platformMapMarkers[${idx}]&&platformMapMarkers[${idx}].openPopup()">
-        <div class="map-vessel-top"><span class="map-vessel-name">${p.nome}</span><span class="map-vessel-time">${p.sigla||''}</span></div>
-        <div class="map-vessel-meta">${p.bacia||'Bacia nao informada'}${p.campos?` Â· ${p.campos}`:''}<br>Lat/Lon: ${p.latitude.toFixed(3)}, ${p.longitude.toFixed(3)}</div>
-      </div>`;
+      const campos=p.campos?' - '+p.campos:'';
+      h+='<div class="map-vessel-card" onclick="platformMapMarkers['+idx+']&&platformMapMarkers['+idx+'].openPopup()">';
+      h+='<div class="map-vessel-top"><span class="map-vessel-name">'+p.nome+'</span><span class="map-vessel-time">'+(p.sigla||'')+'</span></div>';
+      h+='<div class="map-vessel-meta">'+(p.bacia||'Bacia nao informada')+campos+'<br>Lat/Lon: '+p.latitude.toFixed(3)+', '+p.longitude.toFixed(3)+'</div>';
+      h+='</div>';
     });
   }
   el.innerHTML=h;
