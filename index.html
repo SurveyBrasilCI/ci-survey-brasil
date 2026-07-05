@@ -280,13 +280,6 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 .vd-photo{width:260px;height:112px;flex:0 0 260px;border-radius:var(--radius-md);overflow:hidden;position:relative;background:linear-gradient(135deg,var(--bg-secondary),var(--bg-tertiary));border:1px solid var(--border-secondary);}
 .vd-photo img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(.98) contrast(.98);}
 .vd-photo::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(15,22,35,.35),rgba(15,22,35,0));pointer-events:none;}
-.vd-header.has-photo{position:relative;min-height:240px;padding:0;overflow:hidden;align-items:flex-end;}
-.vd-header.has-photo .vd-photo{position:absolute;inset:0;width:100%;height:100%;flex:none;border:0;border-radius:0;}
-.vd-header.has-photo .vd-photo img{filter:saturate(1.02) contrast(1.02);}
-.vd-header.has-photo .vd-photo::after{background:linear-gradient(to top,rgba(7,12,22,.96) 0%,rgba(7,12,22,.78) 28%,rgba(7,12,22,.18) 72%,rgba(7,12,22,.06) 100%);}
-.vd-header.has-photo .vd-left,.vd-header.has-photo .vd-right{position:relative;z-index:1;padding:18px 20px;}
-.vd-header.has-photo .vd-left{align-self:flex-end;}
-.vd-header.has-photo .vd-right{align-self:flex-end;}
 .vd-left{flex:1;min-width:0;}
 .vd-back{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--text-tertiary);cursor:pointer;margin-bottom:10px;background:none;border:none;font-family:var(--font-sans);padding:0;transition:color .12s;}
 .vd-back:hover{color:var(--accent);}
@@ -436,7 +429,7 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 .map-layer-toggle:hover{border-color:var(--accent-border);color:var(--text-primary);}
 .map-layer-toggle input{accent-color:var(--accent);}
 @media(max-width:1000px){.map-shell{grid-template-columns:1fr;}#fleet-map,.map-side{height:420px;min-height:420px;}.map-side{height:auto;min-height:0;max-height:360px;}}
-@media(max-width:760px){.vd-photo{width:100%;flex-basis:100%;height:150px;}.vd-header.has-photo{min-height:260px;align-items:flex-end;}.vd-header.has-photo .vd-left,.vd-header.has-photo .vd-right{padding:14px 16px;}.vd-right{align-items:flex-start;}}
+@media(max-width:760px){.vd-photo{width:100%;flex-basis:100%;height:150px;}.vd-right{align-items:flex-start;}}
 
 </style>
 </head>
@@ -1028,7 +1021,7 @@ function openVessel(name){
   const rovs=fleet?fleet.rovs:[];
   const img=vesselImage(name);
   const imgPos=vesselImagePosition(name);
-  let h=`<div class="vd-header ${img?'has-photo':''}">
+  let h=`<div class="vd-header">
     ${img?`<div class="vd-photo"><img src="${img}?v=${ASSET_VERSION}" alt="${name}" style="object-position:${imgPos};"></div>`:''}
     <div class="vd-left">
       <button class="vd-back" onclick="setPage('dashboard')"><i class="ti ti-arrow-left"></i> Voltar à frota</button>
