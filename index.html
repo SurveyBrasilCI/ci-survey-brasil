@@ -390,6 +390,21 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 .map-vessel-time{font-size:9px;font-family:var(--font-mono);color:var(--text-tertiary);white-space:nowrap;}
 .map-vessel-meta{font-size:10px;color:var(--text-secondary);font-family:var(--font-mono);line-height:1.5;}
 .map-vessel-missing{opacity:.58;}
+.map-legend{border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-secondary);padding:10px;margin-bottom:12px;}
+.map-legend-section+.map-legend-section{margin-top:10px;padding-top:9px;border-top:1px solid var(--border);}
+.map-legend-title{font-size:9px;color:var(--text-tertiary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px;}
+.map-legend-row{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--text-secondary);font-family:var(--font-mono);line-height:1.4;margin:5px 0;}
+.legend-dot,.legend-square{width:10px;height:10px;flex:0 0 auto;border:1px solid rgba(255,255,255,.9);box-shadow:0 0 0 2px rgba(0,0,0,.16);}
+.legend-dot{border-radius:50%;}
+.legend-square{border-radius:2px;}
+.legend-fleet{background:#002f6c;}
+.legend-petrobras{background:#050505;}
+.legend-karoon{background:#00A3E0;}
+.legend-equinor{background:#e30613;}
+.legend-shell{background:#f58220;}
+.legend-brava{background:#159447;}
+.legend-range{position:relative;width:18px;height:18px;flex:0 0 auto;border:1px solid rgba(255,255,255,.28);border-radius:50%;}
+.legend-range:after{content:'';position:absolute;left:5px;top:5px;width:6px;height:6px;border:1px solid rgba(255,255,255,.55);border-radius:50%;}
 .map-empty{height:calc(100vh - 215px);min-height:460px;border:1px dashed var(--border-secondary);border-radius:var(--radius-lg);background:var(--bg-primary);display:flex;align-items:center;justify-content:center;text-align:center;color:var(--text-tertiary);padding:24px;font-size:12px;line-height:1.7;}
 .map-stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px;}
 .map-filter-dropdown{position:relative;}
@@ -405,7 +420,7 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 .fleet-marker{width:14px;height:14px;border-radius:50%;background:#002f6c;border:2px solid #d7e7ff;box-shadow:0 0 0 3px rgba(0,47,108,.34),0 4px 12px rgba(0,0,0,.45);flex:0 0 auto;}
 .fleet-marker-label{padding:2px 6px;border-radius:999px;background:rgba(7,16,34,.92);border:1px solid rgba(0,47,108,.55);color:#D9F3FF;font-size:10px;font-weight:700;line-height:1.2;letter-spacing:.03em;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.28);} 
 .fleet-marker-icon{background:transparent;border:none !important;}
-.platform-marker{width:9px;height:9px;border-radius:50%;background:#050505;border:1px solid rgba(255,255,255,.9);box-shadow:0 0 0 2px rgba(0,0,0,.20),0 2px 8px rgba(0,0,0,.35);}
+.platform-marker{width:9px;height:9px;border-radius:2px;background:#050505;border:1px solid rgba(255,255,255,.9);box-shadow:0 0 0 2px rgba(0,0,0,.20),0 2px 8px rgba(0,0,0,.35);}
 .platform-marker-icon{background:transparent;border:none !important;}
 .map-layer-toggle{height:32px;padding:0 10px;border:1px solid var(--border-secondary);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-secondary);font-size:12px;font-family:var(--font-sans);display:flex;align-items:center;gap:7px;cursor:pointer;}
 .map-layer-toggle:hover{border-color:var(--accent-border);color:var(--text-primary);}
@@ -532,6 +547,22 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
     <div class="map-shell">
       <div id="fleet-map"></div>
       <div class="map-side">
+        <div class="map-legend">
+          <div class="map-legend-section">
+            <div class="map-legend-title">Forma</div>
+            <div class="map-legend-row"><span class="legend-dot legend-fleet"></span>Embarcações</div>
+            <div class="map-legend-row"><span class="legend-square legend-petrobras"></span>Plataformas</div>
+            <div class="map-legend-row"><span class="legend-range"></span>Raios 500 m / 1500 m</div>
+          </div>
+          <div class="map-legend-section">
+            <div class="map-legend-title">Cores das plataformas</div>
+            <div class="map-legend-row"><span class="legend-square legend-petrobras"></span>PETROBRAS</div>
+            <div class="map-legend-row"><span class="legend-square legend-karoon"></span>KAROON</div>
+            <div class="map-legend-row"><span class="legend-square legend-equinor"></span>EQUINOR</div>
+            <div class="map-legend-row"><span class="legend-square legend-shell"></span>SHELL</div>
+            <div class="map-legend-row"><span class="legend-square legend-brava"></span>BRAVA</div>
+          </div>
+        </div>
         <div class="map-side-title">Embarcações no mapa</div>
         <div id="map-list"></div>
       </div>
