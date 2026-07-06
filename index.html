@@ -138,8 +138,8 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 /* TOPBAR */
 .topbar{background:var(--bg-primary);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:48px;position:sticky;top:0;z-index:100;}
 .brand{display:flex;align-items:center;gap:10px;}
-.brand-icon{width:28px;height:28px;background:var(--accent-bg);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;border:1px solid var(--accent-border);}
-.brand-icon i{font-size:15px;color:var(--accent);}
+.brand-icon{width:46px;height:28px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:0 0 auto;}
+.brand-icon img{width:100%;height:100%;object-fit:contain;display:block;}
 .brand-name{font-size:13px;font-weight:600;color:var(--text-primary);letter-spacing:.02em;}
 .brand-sub{font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);}
 .topbar-right{display:flex;align-items:center;gap:10px;}
@@ -280,6 +280,13 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 .vd-photo{width:260px;height:112px;flex:0 0 260px;border-radius:var(--radius-md);overflow:hidden;position:relative;background:linear-gradient(135deg,var(--bg-secondary),var(--bg-tertiary));border:1px solid var(--border-secondary);}
 .vd-photo img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(.98) contrast(.98);}
 .vd-photo::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(15,22,35,.35),rgba(15,22,35,0));pointer-events:none;}
+.vd-header.has-photo{position:relative;min-height:240px;padding:0;overflow:hidden;align-items:flex-end;}
+.vd-header.has-photo .vd-photo{position:absolute;inset:0;width:100%;height:100%;flex:none;border:0;border-radius:0;}
+.vd-header.has-photo .vd-photo img{filter:saturate(1.02) contrast(1.02);}
+.vd-header.has-photo .vd-photo::after{background:linear-gradient(to top,rgba(7,12,22,.96) 0%,rgba(7,12,22,.78) 28%,rgba(7,12,22,.18) 72%,rgba(7,12,22,.06) 100%);}
+.vd-header.has-photo .vd-left,.vd-header.has-photo .vd-right{position:relative;z-index:1;padding:18px 20px;}
+.vd-header.has-photo .vd-left{align-self:flex-end;}
+.vd-header.has-photo .vd-right{align-self:flex-end;}
 .vd-left{flex:1;min-width:0;}
 .vd-back{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--text-tertiary);cursor:pointer;margin-bottom:10px;background:none;border:none;font-family:var(--font-sans);padding:0;transition:color .12s;}
 .vd-back:hover{color:var(--accent);}
@@ -428,8 +435,71 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 .map-layer-toggle{height:32px;padding:0 10px;border:1px solid var(--border-secondary);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-secondary);font-size:12px;font-family:var(--font-sans);display:flex;align-items:center;gap:7px;cursor:pointer;}
 .map-layer-toggle:hover{border-color:var(--accent-border);color:var(--text-primary);}
 .map-layer-toggle input{accent-color:var(--accent);}
-@media(max-width:1000px){.map-shell{grid-template-columns:1fr;}#fleet-map,.map-side{height:420px;min-height:420px;}.map-side{height:auto;min-height:0;max-height:360px;}}
-@media(max-width:760px){.vd-photo{width:100%;flex-basis:100%;height:150px;}.vd-right{align-items:flex-start;}}
+@media(max-width:1000px){
+  .vessels-grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr));}
+  .map-shell{grid-template-columns:1fr;}
+  #fleet-map,.map-side{height:420px;min-height:420px;}
+  .map-side{height:auto;min-height:0;max-height:360px;}
+}
+@media(max-width:760px){
+  body{overflow-x:hidden;}
+  .topbar{height:auto;min-height:48px;padding:8px 12px;gap:8px;align-items:flex-start;flex-wrap:wrap;}
+  .brand{min-width:0;}
+  .brand-name{font-size:12px;}
+  .brand-sub{font-size:9px;}
+  .topbar-right{margin-left:auto;gap:6px;justify-content:flex-end;flex-wrap:wrap;}
+  .ui-controls{order:2;width:100%;justify-content:space-between;}
+  .theme-select{min-width:0;flex:1;}
+  .last-update{font-size:9px;}
+  .search-bar,.nav,.main{padding-left:12px;padding-right:12px;}
+  .nav-item{padding:10px 11px;}
+  .summary-row{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .dashboard-filter-bar{align-items:stretch;}
+  .filter-dropdown,.filter-trigger{width:100%;min-width:0;}
+  .filter-menu,.map-filter-menu{width:calc(100vw - 24px);max-width:330px;}
+  .filter-help{width:100%;}
+  .vessels-grid{grid-template-columns:1fr;}
+  .vessel-photo{height:150px;}
+  .systems-head{align-items:flex-start;gap:4px;flex-direction:column;}
+  .equip-row{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .equip-pill{min-width:0;}
+  .matrix-legend{gap:10px;}
+  .vd-photo{width:100%;flex-basis:100%;height:150px;}
+  .vd-header.has-photo{min-height:270px;align-items:flex-end;}
+  .vd-header.has-photo .vd-left,.vd-header.has-photo .vd-right{padding:14px 16px;}
+  .vd-right{align-items:flex-start;}
+  .vd-vessel-name{font-size:18px;}
+  .vd-meta{gap:9px;}
+  .equip-grid{grid-template-columns:repeat(auto-fill,minmax(145px,1fr));}
+  .pend-card{flex-wrap:wrap;}
+  .pend-pri,.pend-st{margin-left:0;}
+  .obs-board{grid-template-columns:1fr;}
+  .cert-filters{align-items:stretch;}
+  .cert-select{width:100%;}
+  .info-grid,.map-stat-row{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .map-toolbar{align-items:stretch;}
+  .map-toolbar-left,.map-toolbar .btn{width:100%;}
+  .map-filter-dropdown{width:100%;}
+  #fleet-map{height:360px;min-height:360px;}
+  .map-side{max-height:420px;}
+}
+@media(max-width:480px){
+  .topbar-right{width:100%;}
+  .topbar-right .btn{flex:1;justify-content:center;}
+  .last-update{display:none;}
+  .search-input{font-size:12px;}
+  .summary-row,.info-grid,.map-stat-row{grid-template-columns:1fr;}
+  .equip-row{grid-template-columns:1fr;}
+  .equip-grid{grid-template-columns:1fr;}
+  .vessel-photo{height:135px;}
+  .vessel-photo-label{left:12px;right:12px;gap:6px;flex-direction:column;align-items:flex-start;}
+  .vessel-photo-rovs{white-space:normal;}
+  .filter-trigger{min-width:0;}
+  .vd-header.has-photo{min-height:300px;}
+  .vd-header.has-photo .vd-left,.vd-header.has-photo .vd-right{width:100%;}
+  .vd-vessel-name{font-size:17px;}
+  .map-layer-toggle{width:100%;justify-content:center;}
+}
 
 </style>
 </head>
@@ -437,8 +507,8 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 
 <div class="topbar">
   <div class="brand">
-    <div class="brand-icon"><i class="ti ti-radar"></i></div>
-    <div><div class="brand-name">CI Survey Brasil</div><div class="brand-sub">Fleet Configuration Portal</div></div>
+    <div class="brand-icon"><img src="assets/brand/c-innovation-logo.png" alt="C-Innovation"></div>
+    <div><div class="brand-name">CI Survey Brasil</div><div class="brand-sub">Controle de frota</div></div>
   </div>
   <div class="topbar-right">
     <div class="ui-controls" title="Preferências visuais">
@@ -1021,7 +1091,7 @@ function openVessel(name){
   const rovs=fleet?fleet.rovs:[];
   const img=vesselImage(name);
   const imgPos=vesselImagePosition(name);
-  let h=`<div class="vd-header">
+  let h=`<div class="vd-header ${img?'has-photo':''}">
     ${img?`<div class="vd-photo"><img src="${img}?v=${ASSET_VERSION}" alt="${name}" style="object-position:${imgPos};"></div>`:''}
     <div class="vd-left">
       <button class="vd-back" onclick="setPage('dashboard')"><i class="ti ti-arrow-left"></i> Voltar à frota</button>
