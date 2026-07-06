@@ -523,7 +523,7 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
         <option value="contrast">Alto Contraste</option>
       </select>
       <button class="control-btn" onclick="changeFontSize(-1)" title="Diminuir fonte"><i class="ti ti-letter-a-small"></i></button>
-      <span class="font-indicator" id="font-indicator">100%</span>
+      <span class="font-indicator" id="font-indicator">120%</span>
       <button class="control-btn" onclick="changeFontSize(1)" title="Aumentar fonte"><i class="ti ti-letter-a"></i></button>
     </div>
     <span class="last-update" id="last-update">Carregando...</span>
@@ -764,8 +764,10 @@ const FONT_LEVELS=[
   {label:'120%',zoom:1.2},
   {label:'130%',zoom:1.3}
 ];
-let fontLevel=parseInt(localStorage.getItem('ci-font-level')||'1',10);
-if(Number.isNaN(fontLevel)||fontLevel<0||fontLevel>=FONT_LEVELS.length)fontLevel=1;
+const DEFAULT_FONT_LEVEL=3;
+const FONT_STORAGE_KEY='ci-font-level-v2';
+let fontLevel=parseInt(localStorage.getItem(FONT_STORAGE_KEY)||String(DEFAULT_FONT_LEVEL),10);
+if(Number.isNaN(fontLevel)||fontLevel<0||fontLevel>=FONT_LEVELS.length)fontLevel=DEFAULT_FONT_LEVEL;
 
 function applyTheme(){
   const saved=localStorage.getItem('ci-theme')||'dark';
@@ -786,14 +788,14 @@ function cycleTheme(){
   setTheme(next.id);
 }
 function applyFontSize(){
-  const fs=FONT_LEVELS[fontLevel]||FONT_LEVELS[1];
+  const fs=FONT_LEVELS[fontLevel]||FONT_LEVELS[DEFAULT_FONT_LEVEL];
   document.body.style.setProperty('--app-zoom',fs.zoom);
   const ind=document.getElementById('font-indicator');
   if(ind)ind.textContent=fs.label;
 }
 function changeFontSize(delta){
   fontLevel=Math.max(0,Math.min(FONT_LEVELS.length-1,fontLevel+delta));
-  localStorage.setItem('ci-font-level',String(fontLevel));
+  localStorage.setItem(FONT_STORAGE_KEY,String(fontLevel));
   applyFontSize();
 }
 
