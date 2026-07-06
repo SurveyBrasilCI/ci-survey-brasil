@@ -523,7 +523,7 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
         <option value="contrast">Alto Contraste</option>
       </select>
       <button class="control-btn" onclick="changeFontSize(-1)" title="Diminuir fonte"><i class="ti ti-letter-a-small"></i></button>
-      <span class="font-indicator" id="font-indicator">120%</span>
+      <span class="font-indicator" id="font-indicator">100%</span>
       <button class="control-btn" onclick="changeFontSize(1)" title="Aumentar fonte"><i class="ti ti-letter-a"></i></button>
     </div>
     <span class="last-update" id="last-update">Carregando...</span>
@@ -758,17 +758,17 @@ const THEME_OPTIONS=[
   {id:'contrast',label:'Alto Contraste'}
 ];
 const FONT_LEVELS=[
-  {label:'90%',zoom:.9},
-  {label:'100%',zoom:1},
-  {label:'110%',zoom:1.1},
-  {label:'120%',zoom:1.2},
-  {label:'130%',zoom:1.3},
-  {label:'140%',zoom:1.4},
-  {label:'150%',zoom:1.5},
-  {label:'160%',zoom:1.6}
+  {label:'80%',zoom:1.1},
+  {label:'90%',zoom:1.2},
+  {label:'100%',zoom:1.3},
+  {label:'110%',zoom:1.4},
+  {label:'120%',zoom:1.5},
+  {label:'130%',zoom:1.6},
+  {label:'140%',zoom:1.7},
+  {label:'150%',zoom:1.8}
 ];
-const DEFAULT_FONT_LEVEL=3;
-const FONT_STORAGE_KEY='ci-font-level-v2';
+const DEFAULT_FONT_LEVEL=2;
+const FONT_STORAGE_KEY='ci-font-level-v3';
 let fontLevel=parseInt(localStorage.getItem(FONT_STORAGE_KEY)||String(DEFAULT_FONT_LEVEL),10);
 if(Number.isNaN(fontLevel)||fontLevel<0||fontLevel>=FONT_LEVELS.length)fontLevel=DEFAULT_FONT_LEVEL;
 
