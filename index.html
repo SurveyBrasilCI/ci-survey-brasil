@@ -1121,7 +1121,7 @@ function openVessel(name){
   let h=`<div class="vd-header ${img?'has-photo':''}">
     ${img?`<div class="vd-photo"><img src="${img}?v=${ASSET_VERSION}" alt="${name}" style="object-position:${imgPos};"></div>`:''}
     <div class="vd-left">
-      <button class="vd-back" onclick="closeVesselModal()"><i class="ti ti-x"></i> Fechar detalhe</button>
+      <button class="vd-back" onclick="closeVesselDetail()"><i class="ti ti-x"></i> Fechar detalhe</button>
       <div class="vd-vessel-name"><span class="vd-dot" style="background:${dc};"></span>${name}</div>
       <div class="vd-meta">
         ${rovs.map(r=>`<span class="vd-meta-item"><i class="ti ti-robot"></i>${r}</span>`).join('')}
@@ -1167,6 +1167,7 @@ function openVessel(name){
   if(!obs.length){h+=`<div class="no-data">Nenhuma observação registrada.</div>`;}
   else{h+=`<div class="obs-board">`;obs.forEach(o=>{h+=`<div class="obs-note"><div class="obs-text">${o.texto}</div><div class="obs-date">${fmt(o.data)}</div></div>`;});h+=`</div>`;}
   h+=`</div>`;
+  if(openVesselDetailWindow(name,h))return;
   const content=document.getElementById('vessel-modal-content');
   const modal=document.getElementById('vessel-modal');
   const title=document.getElementById('vessel-modal-title');
@@ -1180,6 +1181,43 @@ function openVessel(name){
   if(title)title.textContent='Detalhe da embarcacao - '+name;
   modal.classList.add('open');
   modal.setAttribute('aria-hidden','false');
+}
+function escapeHtml(value){
+  return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function openVesselDetailWindow(name,html){
+  const win=window.open('','_blank','width=1280,height=860,scrollbars=yes,resizable=yes');
+  if(!win)return false;
+  const style=document.querySelector('style')?.textContent||'';
+  const theme=document.body.getAttribute('data-theme')||'dark';
+  const zoom=document.body.style.getPropertyValue('--app-zoom')||'1';
+  win.document.open();
+  win.document.write(`<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<base href="${escapeHtml(location.href)}">
+<title>${escapeHtml(name)} - CI Survey Brasil</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>${style}</style>
+<style>
+body{padding:16px;overflow:auto;}
+.detail-window-shell{max-width:1180px;margin:0 auto;}
+.detail-window-shell .vd-header{margin-bottom:14px;}
+</style>
+</head>
+<body data-theme="${escapeHtml(theme)}" style="--app-zoom:${escapeHtml(zoom)};">
+<div class="detail-window-shell">${html}</div>
+<script>function closeVesselDetail(){window.close();}<\/script>
+</body>
+</html>`);
+  win.document.close();
+  win.focus();
+  return true;
+}
+function closeVesselDetail(){
+  closeVesselModal();
 }
 function closeVesselModal(){
   const modal=document.getElementById('vessel-modal');
