@@ -444,6 +444,22 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 .map-layer-toggle{height:32px;padding:0 10px;border:1px solid var(--border-secondary);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-secondary);font-size:12px;font-family:var(--font-sans);display:flex;align-items:center;gap:7px;cursor:pointer;}
 .map-layer-toggle:hover{border-color:var(--accent-border);color:var(--text-primary);}
 .map-layer-toggle input{accent-color:var(--accent);}
+.map-measure-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.btn.is-active{background:rgba(0,212,255,.12);border-color:var(--accent);color:var(--accent);}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
+.measure-active{cursor:crosshair;}
+.map-measure-control{min-width:230px;max-width:min(320px,calc(100vw - 42px));padding:10px;border:1px solid var(--border-secondary);border-radius:var(--radius-md);background:rgba(7,16,34,.94);color:var(--text-primary);box-shadow:0 14px 34px rgba(0,0,0,.35);backdrop-filter:blur(10px);}
+.map-measure-control.is-hidden{display:none;}
+.map-measure-title{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;margin-bottom:5px;color:var(--text-primary);}
+.map-measure-title i{font-size:14px;color:var(--accent);}
+.map-measure-help{font-size:10px;color:var(--text-tertiary);line-height:1.45;margin-bottom:8px;}
+.map-measure-total{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 8px;border:1px solid rgba(0,212,255,.24);border-radius:var(--radius-sm);background:rgba(0,212,255,.08);font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);margin-bottom:7px;}
+.map-measure-total strong{font-size:12px;color:var(--accent);}
+.map-measure-segments{max-height:120px;overflow:auto;border-top:1px solid var(--border);padding-top:6px;}
+.map-measure-segment{display:flex;justify-content:space-between;gap:10px;font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);line-height:1.7;}
+.map-measure-empty{font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);}
+.measure-point-label{background:var(--accent);border:0;border-radius:999px;color:#00111c;font-size:10px;font-weight:800;box-shadow:0 4px 12px rgba(0,0,0,.25);padding:1px 5px;}
+.measure-distance-label{background:rgba(7,16,34,.92);border:1px solid rgba(0,212,255,.45);border-radius:999px;color:#D9F3FF;font-size:10px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,.25);padding:2px 6px;}
 @media(max-width:1000px){
   .vessels-grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr));}
   .map-shell{grid-template-columns:1fr;}
@@ -488,6 +504,7 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
   .info-grid,.map-stat-row{grid-template-columns:repeat(2,minmax(0,1fr));}
   .map-toolbar{align-items:stretch;}
   .map-toolbar-left,.map-toolbar .btn{width:100%;}
+  .map-measure-actions{width:100%;}
   .map-filter-dropdown{width:100%;}
   #fleet-map{height:360px;min-height:360px;}
   .map-side{max-height:420px;}
@@ -628,7 +645,11 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
           Plataformas
         </label>
       </div>
-      <button class="btn" type="button" onclick="fitFleetMap()"><i class="ti ti-focus-centered"></i> Enquadrar frota</button>
+      <div class="map-measure-actions">
+        <button class="btn" id="measure-toggle" type="button" onclick="toggleMapMeasure()"><i class="ti ti-ruler-measure"></i> Régua</button>
+        <button class="btn" id="measure-clear" type="button" onclick="clearMapMeasure()" disabled><i class="ti ti-eraser"></i> Limpar régua</button>
+        <button class="btn" type="button" onclick="fitFleetMap()"><i class="ti ti-focus-centered"></i> Enquadrar frota</button>
+      </div>
     </div>
     <div class="map-shell">
       <div id="fleet-map"></div>
@@ -639,6 +660,7 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
             <div class="map-legend-row"><span class="legend-dot legend-fleet"></span>Embarcações</div>
             <div class="map-legend-row"><span class="legend-square legend-petrobras"></span>Plataformas</div>
             <div class="map-legend-row"><span class="legend-range"></span>Raios 500 m / 1500 m</div>
+            <div class="map-legend-row"><i class="ti ti-ruler-measure" style="color:var(--accent);font-size:13px;"></i>Régua de distância</div>
           </div>
           <div class="map-legend-section">
             <div class="map-legend-title">Cores das plataformas</div>
@@ -1338,6 +1360,11 @@ let fleetMap=null;
 let fleetMapMarkers=[];
 let platformMapMarkers=[];
 let platformRangeCircles=[];
+let mapMeasureActive=false;
+let mapMeasurePoints=[];
+let mapMeasureMarkers=[];
+let mapMeasureLines=[];
+let mapMeasureControl=null;
 let selectedMapVessels=new Set(FLEET.map(f=>f.embarcacao));
 let showPlatforms=localStorage.getItem('ciSurveyShowPlatforms')!=='false';
 try{
@@ -1387,7 +1414,10 @@ function ensureFleetMap(){
   fleetMap=L.map(el,{scrollWheelZoom:true}).setView([-22.9,-42.7],6);
   fleetMap.createPane('platformRanges');
   fleetMap.getPane('platformRanges').style.zIndex=410;
+  fleetMap.createPane('measureLines');
+  fleetMap.getPane('measureLines').style.zIndex=430;
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'&copy; OpenStreetMap'}).addTo(fleetMap);
+  initMapMeasureControl(fleetMap);
   return fleetMap;
 }
 function clearFleetMarkers(){fleetMapMarkers.forEach(m=>m.remove());fleetMapMarkers=[];}
@@ -1396,6 +1426,114 @@ function clearPlatformMarkers(){
   platformRangeCircles.forEach(c=>c.remove());
   platformMapMarkers=[];
   platformRangeCircles=[];
+}
+function formatMeasureDistance(meters){
+  const km=meters/1000;
+  const nm=meters/1852;
+  if(meters<1000)return `${Math.round(meters)} m · ${km.toFixed(2)} km · ${nm.toFixed(2)} NM`;
+  return `${km.toFixed(2)} km · ${nm.toFixed(2)} NM · ${Math.round(meters)} m`;
+}
+function formatMeasureShort(meters){
+  return meters<1000?`${Math.round(meters)} m`:`${(meters/1852).toFixed(2)} NM`;
+}
+function initMapMeasureControl(map){
+  if(mapMeasureControl||typeof L==='undefined')return;
+  mapMeasureControl=L.control({position:'bottomleft'});
+  mapMeasureControl.onAdd=function(){
+    const el=L.DomUtil.create('div','map-measure-control is-hidden');
+    el.id='map-measure-control';
+    L.DomEvent.disableClickPropagation(el);
+    L.DomEvent.disableScrollPropagation(el);
+    return el;
+  };
+  mapMeasureControl.addTo(map);
+  updateMapMeasurePanel();
+}
+function updateMapMeasureButtons(){
+  const toggle=document.getElementById('measure-toggle');
+  const clear=document.getElementById('measure-clear');
+  if(toggle)toggle.classList.toggle('is-active',mapMeasureActive);
+  if(clear)clear.disabled=mapMeasurePoints.length===0;
+}
+function getMeasureSegments(){
+  const segments=[];
+  let total=0;
+  for(let i=1;i<mapMeasurePoints.length;i++){
+    const meters=fleetMap.distance(mapMeasurePoints[i-1],mapMeasurePoints[i]);
+    total+=meters;
+    segments.push({idx:i,meters});
+  }
+  return {segments,total};
+}
+function updateMapMeasurePanel(){
+  updateMapMeasureButtons();
+  const el=document.getElementById('map-measure-control');
+  if(!el)return;
+  if(!mapMeasureActive&&mapMeasurePoints.length===0){
+    el.classList.add('is-hidden');
+    el.innerHTML='';
+    return;
+  }
+  const {segments,total}=getMeasureSegments();
+  el.classList.remove('is-hidden');
+  const rows=segments.map(s=>`<div class="map-measure-segment"><span>Trecho ${s.idx}</span><strong>${formatMeasureDistance(s.meters)}</strong></div>`).join('');
+  el.innerHTML=`<div class="map-measure-title"><i class="ti ti-ruler-measure"></i>Régua ativa</div>
+    <div class="map-measure-help">Clique no mapa para adicionar pontos. Cada novo ponto cria um trecho e atualiza o total.</div>
+    <div class="map-measure-total"><span>Total</span><strong>${formatMeasureDistance(total)}</strong></div>
+    <div class="map-measure-segments">${rows||'<div class="map-measure-empty">Adicione pelo menos dois pontos.</div>'}</div>`;
+}
+function setMapMeasureMode(active){
+  const map=ensureFleetMap();
+  if(!map)return;
+  mapMeasureActive=!!active;
+  map.getContainer().classList.toggle('measure-active',mapMeasureActive);
+  map.off('click',onMapMeasureClick);
+  if(mapMeasureActive)map.on('click',onMapMeasureClick);
+  updateMapMeasurePanel();
+}
+function toggleMapMeasure(){
+  setMapMeasureMode(!mapMeasureActive);
+}
+function onMapMeasureClick(e){
+  addMapMeasurePoint(e.latlng);
+}
+function addMapMeasurePoint(latlng){
+  if(!fleetMap)return;
+  const idx=mapMeasurePoints.length+1;
+  const marker=L.circleMarker(latlng,{
+    radius:5,
+    color:'#d9f3ff',
+    weight:2,
+    fillColor:'#00d4ff',
+    fillOpacity:.95,
+    pane:'markerPane'
+  }).addTo(fleetMap);
+  marker.bindTooltip(String(idx),{permanent:true,direction:'center',className:'measure-point-label',opacity:1});
+  mapMeasureMarkers.push(marker);
+  if(mapMeasurePoints.length){
+    const previous=mapMeasurePoints[mapMeasurePoints.length-1];
+    const meters=fleetMap.distance(previous,latlng);
+    const line=L.polyline([previous,latlng],{
+      pane:'measureLines',
+      color:'#00d4ff',
+      weight:3,
+      opacity:.95,
+      dashArray:'6 6'
+    }).addTo(fleetMap);
+    line.bindTooltip(formatMeasureShort(meters),{permanent:true,direction:'center',className:'measure-distance-label',opacity:1});
+    mapMeasureLines.push(line);
+  }
+  mapMeasurePoints.push(latlng);
+  updateMapMeasurePanel();
+}
+function clearMapMeasure(ev){
+  if(ev)ev.stopPropagation();
+  mapMeasureMarkers.forEach(m=>m.remove());
+  mapMeasureLines.forEach(l=>l.remove());
+  mapMeasurePoints=[];
+  mapMeasureMarkers=[];
+  mapMeasureLines=[];
+  updateMapMeasurePanel();
 }
 function togglePlatformsLayer(checked){
   showPlatforms=!!checked;
