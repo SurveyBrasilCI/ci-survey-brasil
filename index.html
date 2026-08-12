@@ -68,44 +68,28 @@ body[data-theme="navy"]{
   --accent-bg:rgba(56,189,248,.14);
   --accent-border:#0284c7;
 }
-body[data-theme="ocean"]{
-  --bg-primary:#062421;
-  --bg-secondary:#0b332f;
-  --bg-tertiary:#031816;
-  --border:#155e56;
-  --border-secondary:#1f7a70;
-  --text-primary:#e6fffb;
-  --text-secondary:#9bd7cf;
-  --text-tertiary:#5b918a;
-  --accent:#2dd4bf;
-  --accent-bg:rgba(45,212,191,.14);
-  --accent-border:#0f766e;
-}
-body[data-theme="forest"]{
-  --bg-primary:#0b1f14;
-  --bg-secondary:#102b1c;
-  --bg-tertiary:#06140c;
-  --border:#1d4d32;
-  --border-secondary:#2f6844;
-  --text-primary:#ecfdf3;
-  --text-secondary:#acd1ba;
-  --text-tertiary:#668873;
-  --accent:#4ade80;
-  --accent-bg:rgba(74,222,128,.14);
-  --accent-border:#16a34a;
-}
-body[data-theme="amber"]{
-  --bg-primary:#21170a;
-  --bg-secondary:#30210d;
-  --bg-tertiary:#120c05;
-  --border:#5f4215;
-  --border-secondary:#7c561b;
-  --text-primary:#fff7ed;
-  --text-secondary:#e2c59a;
-  --text-tertiary:#9a7445;
-  --accent:#f59e0b;
-  --accent-bg:rgba(245,158,11,.16);
-  --accent-border:#d97706;
+body[data-theme="vacation"]{
+  --bg-primary:#ffffff;
+  --bg-secondary:#f8f9fa;
+  --bg-tertiary:#f0f2f5;
+  --border:#dde3ec;
+  --border-secondary:#c8d1dc;
+  --text-primary:#333333;
+  --text-secondary:#555555;
+  --text-tertiary:#666666;
+  --accent:#0056b3;
+  --accent-bg:rgba(0,86,179,.10);
+  --accent-border:#004494;
+  --green:#28a745;
+  --green-bg:rgba(40,167,69,.12);
+  --amber:#e8a33d;
+  --amber-bg:rgba(232,163,61,.14);
+  --red:#dc3545;
+  --red-bg:rgba(220,53,69,.10);
+  --orange:#fd7e14;
+  --orange-bg:rgba(253,126,20,.12);
+  --blue:#0056b3;
+  --blue-bg:rgba(0,86,179,.10);
 }
 body[data-theme="graphite"]{
   --bg-primary:#18181b;
@@ -591,9 +575,7 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
         <option value="dark">Escuro</option>
         <option value="light">Claro</option>
         <option value="navy">Azul Operacional</option>
-        <option value="ocean">Oceano</option>
-        <option value="forest">Verde Offshore</option>
-        <option value="amber">Âmbar Técnico</option>
+        <option value="vacation">Institucional</option>
         <option value="graphite">Grafite</option>
         <option value="contrast">Alto Contraste</option>
       </select>
@@ -822,9 +804,7 @@ const THEME_OPTIONS=[
   {id:'dark',label:'Escuro'},
   {id:'light',label:'Claro'},
   {id:'navy',label:'Azul Operacional'},
-  {id:'ocean',label:'Oceano'},
-  {id:'forest',label:'Verde Offshore'},
-  {id:'amber',label:'Âmbar Técnico'},
+  {id:'vacation',label:'Institucional'},
   {id:'graphite',label:'Grafite'},
   {id:'contrast',label:'Alto Contraste'}
 ];
