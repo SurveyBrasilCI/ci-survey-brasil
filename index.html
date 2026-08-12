@@ -214,9 +214,9 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 
 /* FLEET GRID */
 .section-label{font-size:10px;font-weight:500;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.08em;font-family:var(--font-mono);margin-bottom:10px;}
-.vessels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;}
-.vessel-card{background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;display:block;position:relative;cursor:pointer;transition:border-color .15s,transform .15s;}
-.vessel-card:hover{border-color:var(--border-secondary);transform:translateY(-1px);}
+.vessels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;}
+.vessel-card{background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;display:block;position:relative;cursor:pointer;transition:border-color .15s,transform .15s,background .15s;}
+.vessel-card:hover{border-color:var(--accent-border);transform:translateY(-1px);background:var(--bg-secondary);}
 .vessel-stripe{position:absolute;left:0;top:0;bottom:0;width:3px;z-index:3;}
 .stripe-ok{background:var(--green);}.stripe-warn{background:var(--amber);}.stripe-critical{background:var(--red);}
 .vessel-photo{height:130px;position:relative;background:linear-gradient(135deg,var(--bg-secondary),var(--bg-tertiary));overflow:hidden;}
@@ -226,29 +226,30 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 .vessel-photo-label{position:absolute;left:14px;bottom:10px;right:14px;z-index:2;display:flex;align-items:flex-end;justify-content:space-between;gap:10px;}
 .vessel-photo-name{font-size:14px;font-weight:700;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.8);line-height:1.1;}
 .vessel-photo-rovs{font-size:10px;color:#b7c8e4;font-family:var(--font-mono);text-shadow:0 1px 6px rgba(0,0,0,.8);white-space:nowrap;}
-.vessel-body{padding:12px 14px;min-width:0;}
+.vessel-body{padding:12px 14px 12px 16px;min-width:0;}
 .vessel-body .vessel-header{display:none;}
+.vessel-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;}
 .vessel-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;gap:8px;}
-.vessel-name{font-size:13px;font-weight:600;color:var(--text-primary);line-height:1.2;}
+.vessel-name{font-size:14px;font-weight:700;color:var(--text-primary);line-height:1.2;}
 .vessel-meta-line{font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);margin-top:2px;}
 .vcto-tag{font-size:10px;font-family:var(--font-mono);padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0;}
 .vcto-ok{background:var(--green-bg);color:var(--green);}
 .vcto-warn{background:var(--amber-bg);color:var(--amber);}
 .vcto-danger{background:var(--red-bg);color:var(--red);}
-.systems-head{display:flex;align-items:center;justify-content:space-between;margin:0 0 6px 0;}
+.systems-head{display:flex;align-items:center;justify-content:space-between;margin:0 0 6px 0;padding-top:8px;border-top:1px solid var(--border);}
 .systems-title{font-size:10px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.22em;font-family:var(--font-mono);font-weight:700;}
 .systems-count{font-size:9px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.08em;font-family:var(--font-mono);}
-.equip-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:10px;}
-.equip-pill{min-height:25px;font-size:10px;font-family:var(--font-mono);padding:5px 8px;border-radius:3px;display:flex;align-items:center;gap:6px;border:1px solid var(--border);color:var(--text-secondary);font-weight:800;text-transform:uppercase;letter-spacing:.04em;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;box-shadow:inset 0 0 0 1px rgba(255,255,255,.02);}
+.equip-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-bottom:10px;}
+.equip-pill{min-height:24px;font-size:9px;font-family:var(--font-mono);padding:5px 7px;border-radius:4px;display:flex;align-items:center;gap:6px;border:1px solid var(--border);color:var(--text-secondary);font-weight:800;text-transform:uppercase;letter-spacing:.03em;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;box-shadow:inset 0 0 0 1px rgba(255,255,255,.02);}
 .equip-pill .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;box-shadow:0 0 0 2px rgba(255,255,255,.04);}
 .equip-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
 .equip-count{margin-left:auto;font-size:9px;font-family:var(--font-mono);font-weight:900;opacity:.95;flex-shrink:0;}
 .dot-ok{background:var(--green);}.dot-warn{background:var(--amber);}.dot-critical{background:var(--red);}.dot-absent{background:var(--border-secondary);}
-.pill-ok{background:rgba(34,197,94,.19);border-color:rgba(34,197,94,.34);color:var(--green);}
-.pill-warn{background:rgba(245,158,11,.20);border-color:rgba(245,158,11,.42);color:var(--amber);}
-.pill-critical{background:rgba(239,68,68,.20);border-color:rgba(239,68,68,.45);color:var(--red);}
+.pill-ok{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.28);color:var(--green);}
+.pill-warn{background:rgba(245,158,11,.13);border-color:rgba(245,158,11,.34);color:var(--amber);}
+.pill-critical{background:rgba(239,68,68,.13);border-color:rgba(239,68,68,.34);color:var(--red);}
 .pill-absent{background:rgba(74,96,128,.10);border-color:rgba(74,96,128,.25);color:var(--text-tertiary);}
-.pendencias-list{border-top:1px solid var(--border);padding-top:8px;margin-top:4px;}
+.pendencias-list{padding-top:2px;margin-top:2px;}
 .pend-item{font-size:11px;color:var(--text-secondary);display:flex;align-items:baseline;gap:5px;line-height:1.4;padding:1px 0;}
 .pend-dot{font-size:14px;line-height:1;flex-shrink:0;}
 .pend-dot.critica,.pend-dot.alta{color:var(--red);}
@@ -276,7 +277,7 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 .legend-note{font-size:10px;color:var(--text-tertiary);}
 
 /* VESSEL DETAIL */
-.vd-header{background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.vd-header{background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:12px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;}
 .vd-photo{width:260px;height:112px;flex:0 0 260px;border-radius:var(--radius-md);overflow:hidden;position:relative;background:linear-gradient(135deg,var(--bg-secondary),var(--bg-tertiary));border:1px solid var(--border-secondary);}
 .vd-photo img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(.98) contrast(.98);}
 .vd-photo::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(15,22,35,.35),rgba(15,22,35,0));pointer-events:none;}
@@ -301,14 +302,14 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 .badge-ok{background:var(--green-bg);color:var(--green);}
 .badge-warn{background:var(--amber-bg);color:var(--amber);}
 .badge-crit{background:var(--red-bg);color:var(--red);}
-.vessel-modal-overlay{position:fixed;inset:0;background:rgba(3,7,14,.76);backdrop-filter:blur(5px);z-index:2000;display:none;align-items:center;justify-content:center;padding:22px;}
+.vessel-modal-overlay{position:fixed;inset:0;background:rgba(3,7,14,.72);backdrop-filter:blur(5px);z-index:2000;display:none;align-items:center;justify-content:center;padding:18px;}
 .vessel-modal-overlay.open{display:flex;}
-.vessel-modal{width:min(1180px,96vw);max-height:92vh;background:var(--bg-tertiary);border:1px solid var(--border-secondary);border-radius:var(--radius-lg);box-shadow:0 28px 80px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden;}
+.vessel-modal{width:min(1040px,96vw);max-height:92vh;background:var(--bg-tertiary);border:1px solid var(--border-secondary);border-radius:var(--radius-lg);box-shadow:0 28px 80px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden;}
 .vessel-modal-bar{height:42px;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 14px;background:var(--bg-primary);border-bottom:1px solid var(--border);}
 .vessel-modal-title{font-size:11px;color:var(--text-secondary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.08em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .vessel-modal-close{width:28px;height:28px;border:1px solid var(--border-secondary);border-radius:var(--radius-sm);background:var(--bg-secondary);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;}
 .vessel-modal-close:hover{border-color:var(--accent-border);color:var(--text-primary);}
-.vessel-modal-content{padding:14px;overflow:auto;}
+.vessel-modal-content{padding:12px;overflow:auto;}
 .vessel-modal-content .vd-header{margin-bottom:14px;}
 .vd-section{margin-bottom:14px;}
 .vd-sec-title{font-size:10px;font-weight:500;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.08em;font-family:var(--font-mono);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
@@ -340,6 +341,40 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 .controle-table{border-collapse:collapse;width:100%;font-size:11px;margin-bottom:8px;}
 .controle-table th{background:var(--bg-secondary);border:1px solid var(--border);padding:6px 8px;font-size:9px;color:var(--text-secondary);font-family:var(--font-mono);text-align:left;text-transform:uppercase;letter-spacing:.05em;}
 .controle-table td{border:1px solid var(--border);padding:7px 8px;vertical-align:top;}
+.vd-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px;}
+.vd-kpi{background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px;}
+.vd-kpi-label{font-size:9px;color:var(--text-tertiary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;}
+.vd-kpi-value{font-size:20px;line-height:1;font-family:var(--font-mono);color:var(--text-primary);}
+.vd-kpi-value.ok{color:var(--green);}.vd-kpi-value.warn{color:var(--amber);}.vd-kpi-value.crit{color:var(--red);}
+.controle-equipment-list{display:flex;flex-direction:column;gap:8px;}
+.controle-equipment{background:var(--bg-primary);border:1px solid var(--border);border-left:3px solid var(--border-secondary);border-radius:var(--radius-md);overflow:hidden;}
+.controle-equipment.st-ok{border-left-color:var(--green);}
+.controle-equipment.st-warn{border-left-color:var(--amber);}
+.controle-equipment.st-crit{border-left-color:var(--red);}
+.controle-equipment summary{list-style:none;cursor:pointer;padding:12px 14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;}
+.controle-equipment summary::-webkit-details-marker{display:none;}
+.controle-equipment[open] summary{border-bottom:1px solid var(--border);background:var(--bg-secondary);}
+.equip-summary-main{min-width:0;}
+.equip-summary-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:5px;}
+.equip-status-dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:var(--border-secondary);}
+.controle-equipment.st-ok .equip-status-dot{background:var(--green);}
+.controle-equipment.st-warn .equip-status-dot{background:var(--amber);}
+.controle-equipment.st-crit .equip-status-dot{background:var(--red);}
+.equip-summary-meta{display:flex;gap:8px;flex-wrap:wrap;font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);}
+.equip-summary-side{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+.equip-chip{font-size:9px;font-family:var(--font-mono);padding:2px 7px;border:1px solid var(--border-secondary);border-radius:20px;color:var(--text-secondary);background:var(--bg-tertiary);white-space:nowrap;}
+.equip-chip.ok{border-color:rgba(34,197,94,.35);color:var(--green);background:var(--green-bg);}
+.equip-chip.warn{border-color:rgba(245,158,11,.38);color:var(--amber);background:var(--amber-bg);}
+.equip-chip.crit{border-color:rgba(239,68,68,.38);color:var(--red);background:var(--red-bg);}
+.equip-expand-icon{font-size:16px;color:var(--text-tertiary);transition:transform .15s;}
+.controle-equipment[open] .equip-expand-icon{transform:rotate(180deg);}
+.controle-equipment-body{padding:12px 14px 14px;}
+.controle-two-col{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(260px,.95fr);gap:12px;align-items:start;}
+.controle-panel{min-width:0;}
+.compact-list{display:flex;flex-direction:column;gap:6px;}
+.compact-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 8px;}
+.compact-row-title{font-size:11px;color:var(--text-primary);line-height:1.35;}
+.compact-row-meta{font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);white-space:nowrap;}
 
 /* PENDÊNCIAS */
 .pend-cards{display:flex;flex-direction:column;gap:6px;}
@@ -503,6 +538,17 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
   .vd-right{align-items:flex-start;}
   .vd-vessel-name{font-size:18px;}
   .vd-meta{gap:9px;}
+  .vessel-modal-overlay{padding:8px;}
+  .vessel-modal{width:100%;max-height:96vh;}
+  .vessel-modal-content{padding:10px;}
+  .vd-header{flex-direction:column;gap:12px;}
+  .vd-left,.vd-right{width:100%;}
+  .vd-right{align-items:flex-start;}
+  .vd-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .controle-equipment summary{grid-template-columns:1fr;gap:8px;}
+  .equip-summary-side{justify-content:flex-start;}
+  .controle-two-col{grid-template-columns:1fr;}
+  .compact-row{grid-template-columns:1fr;gap:4px;}
   .equip-grid{grid-template-columns:repeat(auto-fill,minmax(145px,1fr));}
   .pend-card{flex-wrap:wrap;}
   .pend-pri,.pend-st{margin-left:0;}
@@ -535,6 +581,7 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
   .vd-header.has-photo{min-height:300px;}
   .vd-header.has-photo .vd-left,.vd-header.has-photo .vd-right{width:100%;}
   .vd-vessel-name{font-size:17px;}
+  .vd-kpi-grid{grid-template-columns:1fr;}
   .map-layer-toggle{width:100%;justify-content:center;}
 }
 
@@ -1178,18 +1225,10 @@ function vesselImage(name){return VESSEL_IMAGES[name]||'';}
 function vesselImagePosition(name){return VESSEL_IMAGE_POSITIONS[name]||'center center';}
 function dashCard(v){
   const sc={ok:'stripe-ok',warn:'stripe-warn',crit:'stripe-critical'}[v.st];
-  const img=vesselImage(v.name);
   return`<div class="vessel-card" onclick="openVessel('${v.name.replace(/'/g,"\\'")}')">
     <div class="vessel-stripe ${sc}"></div>
-    <div class="vessel-photo">
-      ${img?`<img src="${img}?v=${ASSET_VERSION}" alt="${v.name}" loading="lazy" style="object-position:${vesselImagePosition(v.name)};">`:''}
-      <div class="vessel-photo-label">
-        <div class="vessel-photo-name">${v.name}</div>
-        <div class="vessel-photo-rovs">${v.rovs.join(' / ')}</div>
-      </div>
-    </div>
     <div class="vessel-body">
-      <div class="vessel-header">
+      <div class="vessel-card-top">
         <div><div class="vessel-name">${v.name}</div><div class="vessel-meta-line">${v.rovs.join(' / ')}</div></div>
         ${vctoTag(v)}
       </div>
@@ -1262,7 +1301,6 @@ function eCard(item){
 function absentCard(name){return`<div class="equip-card st-absent"><div class="ec-top"><span class="ec-name">${name}</span></div><div class="ec-absent-label">Não embarcado</div></div>`;}
 
 function displayVesselDetail(name,h){
-  if(openVesselDetailWindow(name,h))return;
   const content=document.getElementById('vessel-modal-content');
   const modal=document.getElementById('vessel-modal');
   const title=document.getElementById('vessel-modal-title');
@@ -1288,6 +1326,38 @@ function controleStatusBadge(st){
   const cls=n==='inoperante'?'crit':CONTROLE_WAIT_STATUSES.includes(n)?'warn':'ok';
   return`<span class="ec-badge ${cls}">${escapeHtml(status)}</span>`;
 }
+function chipClassFromStatus(st){
+  if(st==='crit')return'crit';
+  if(st==='warn')return'warn';
+  return'ok';
+}
+function detailKpi(label,value,cls=''){
+  return`<div class="vd-kpi"><div class="vd-kpi-label">${escapeHtml(label)}</div><div class="vd-kpi-value ${cls}">${value}</div></div>`;
+}
+function detailChip(label,cls=''){
+  return`<span class="equip-chip ${cls}">${escapeHtml(label)}</span>`;
+}
+function compactVencimentoRow(r){
+  const sit=vencimentoSituation(r.vencimento);
+  const cls=sit.st==='crit'?'crit':sit.st==='warn'?'warn':'ok';
+  return`<div class="compact-row">
+    <div class="compact-row-title">${escapeHtml(r.controle||'Vencimento')}</div>
+    <div class="compact-row-meta">${fmt(r.vencimento)}</div>
+    ${detailChip(sit.label,cls)}
+  </div>`;
+}
+function compactPendenciaRow(p,group){
+  return`<div class="pend-card p-media">
+    <div class="pend-body">
+      <div class="pend-desc">${escapeHtml(p.descricao||p.controle||'Sem descrição')}</div>
+      <div class="pend-meta">
+        <span class="pend-tag"><i class="ti ti-tool"></i>${escapeHtml(p.controle||group)}</span>
+        ${p.vencimento?`<span class="pend-tag"><i class="ti ti-calendar"></i>Prazo ${fmt(p.vencimento)}</span>`:''}
+      </div>
+    </div>
+    <span class="pend-st">${escapeHtml(p.statusControle||'Aberta')}</span>
+  </div>`;
+}
 function renderControleDetail(name,rows,data){
   const fleet=FLEET.find(f=>f.embarcacao===name);
   const rovs=fleet?fleet.rovs:[];
@@ -1296,10 +1366,15 @@ function renderControleDetail(name,rows,data){
   const dc={ok:'#22c55e',warn:'#f59e0b',crit:'#ef4444'}[vs];
   const bc={ok:'badge-ok',warn:'badge-warn',crit:'badge-crit'}[vs];
   const bl={ok:'Operacional',warn:'Atenção',crit:'Crítico'}[vs];
-  const img=vesselImage(name);
-  const imgPos=vesselImagePosition(name);
-  let h=`<div class="vd-header ${img?'has-photo':''}">
-    ${img?`<div class="vd-photo"><img src="${img}?v=${ASSET_VERSION}" alt="${escapeHtml(name)}" style="object-position:${imgPos};"></div>`:''}
+  const vencRows=rows.filter(r=>tipoControle(r)==='vencimento'&&r.vencimento);
+  const vencidos=vencRows.filter(r=>vencimentoSituation(r.vencimento).st==='crit').length;
+  const prox30=vencRows.filter(r=>{
+    const sit=vencimentoSituation(r.vencimento);
+    return sit.st==='warn'&&sit.days!==null&&sit.days<=30;
+  }).length;
+  const pendencias=rows.filter(r=>tipoControle(r)==='pendencia'&&isControleOpen(r.statusControle)).length;
+  const inoperantes=rows.filter(r=>normText(r.statusEquipamento)==='inoperante').length;
+  let h=`<div class="vd-header">
     <div class="vd-left">
       <button class="vd-back" onclick="closeVesselDetail()"><i class="ti ti-x"></i> Fechar detalhe</button>
       <div class="vd-vessel-name"><span class="vd-dot" style="background:${dc};"></span>${escapeHtml(name)}</div>
@@ -1314,59 +1389,60 @@ function renderControleDetail(name,rows,data){
     </div>
   </div>`;
   if(!rows.length)return h+`<div class="vd-section"><div class="no-data">Nenhum controle cadastrado para esta embarcação na aba ControleEquipamentos.</div></div>`;
-  CONTROLE_GROUP_ORDER.forEach(group=>{
+  h+=`<div class="vd-kpi-grid">
+    ${detailKpi('Vencidos',vencidos,vencidos?'crit':'ok')}
+    ${detailKpi('Próx. 30 dias',prox30,prox30?'warn':'ok')}
+    ${detailKpi('Pendências',pendencias,pendencias?'warn':'ok')}
+    ${detailKpi('Inoperantes',inoperantes,inoperantes?'crit':'ok')}
+  </div>`;
+  h+=`<div class="controle-equipment-list">`;
+  CONTROLE_GROUP_ORDER.forEach((group,idx)=>{
     const gr=rows.filter(r=>r.grupo===group);
     if(!gr.length)return;
     const latest=[...gr].sort((a,b)=>String(b.atualizadoEm||'').localeCompare(String(a.atualizadoEm||'')))[0]||{};
     const venc=gr.filter(r=>tipoControle(r)==='vencimento').sort((a,b)=>String(a.vencimento||'9999').localeCompare(String(b.vencimento||'9999')));
     const pend=gr.filter(r=>tipoControle(r)==='pendencia'&&isControleOpen(r.statusControle));
     const obs=gr.filter(r=>tipoControle(r)==='observacao').sort((a,b)=>String(b.atualizadoEm||'').localeCompare(String(a.atualizadoEm||'')));
-    h+=`<div class="vd-section"><div class="vd-sec-title"><i class="ti ti-settings-check"></i>${escapeHtml(CONTROLE_GROUP_LABELS[group]||group)}</div>`;
-    h+=`<div class="controle-detail-grid">
-      ${controleField('S/N',latest.tag)}
-      ${controleField('Status do equipamento',latest.statusEquipamento)}
-      ${controleField('Atualizado em',fmt(latest.atualizadoEm))}
-    </div>`;
-    if(venc.length){
-      h+=`<div class="controle-subtitle">Vencimentos</div><table class="controle-table"><thead><tr><th>Controle</th><th>Vencimento</th><th>Situação</th><th>Status</th></tr></thead><tbody>`;
-      venc.forEach(r=>{
-        const sit=vencimentoSituation(r.vencimento);
-        const cls=sit.st==='crit'?'db-expired':sit.st==='warn'?'db-warn':'db-ok';
-        h+=`<tr><td>${escapeHtml(r.controle||'Vencimento')}</td><td class="mono">${fmt(r.vencimento)}</td><td><span class="days-badge ${cls}">${sit.label}</span></td><td>${controleStatusBadge(r.statusControle||r.statusEquipamento)}</td></tr>`;
-      });
-      h+=`</tbody></table>`;
-    }else if(group!=='DVL'){
-      h+=`<div class="controle-subtitle">Vencimentos</div><div class="no-data">Nenhum vencimento cadastrado.</div>`;
-    }
-    h+=`<div class="controle-subtitle">Pendências</div>`;
-    if(!pend.length)h+=`<div class="no-data">Nenhuma pendência aberta.</div>`;
-    else{
-      h+=`<div class="pend-cards">`;
-      pend.forEach(p=>{
-        h+=`<div class="pend-card p-media">
-          <div class="pend-body">
-            <div class="pend-desc">${escapeHtml(p.descricao||p.controle||'Sem descrição')}</div>
-            <div class="pend-meta">
-              <span class="pend-tag"><i class="ti ti-tool"></i>${escapeHtml(p.controle||group)}</span>
-              ${p.vencimento?`<span class="pend-tag"><i class="ti ti-calendar"></i>Prazo ${fmt(p.vencimento)}</span>`:''}
-            </div>
+    const st=groupControleStatus(gr);
+    const next=venc.find(r=>r.vencimento);
+    const expired=venc.filter(r=>vencimentoSituation(r.vencimento).st==='crit').length;
+    const soon=venc.filter(r=>vencimentoSituation(r.vencimento).st==='warn').length;
+    const open=idx===0?' open':'';
+    h+=`<details class="controle-equipment st-${st}"${open}>
+      <summary>
+        <div class="equip-summary-main">
+          <div class="equip-summary-title"><span class="equip-status-dot"></span>${escapeHtml(CONTROLE_GROUP_LABELS[group]||group)}</div>
+          <div class="equip-summary-meta">
+            ${latest.tag?`<span>S/N ${escapeHtml(latest.tag)}</span>`:''}
+            <span>${escapeHtml(latest.statusEquipamento||'Operacional')}</span>
+            ${latest.atualizadoEm?`<span>Atualizado ${fmt(latest.atualizadoEm)}</span>`:''}
           </div>
-          <span class="pend-st">${escapeHtml(p.statusControle||'Aberta')}</span>
-        </div>`;
-      });
-      h+=`</div>`;
-    }
-    h+=`<div class="controle-subtitle">Observações</div>`;
-    if(!obs.length)h+=`<div class="no-data">Nenhuma observação registrada.</div>`;
-    else{
-      h+=`<div class="obs-board">`;
-      obs.forEach(o=>{
-        h+=`<div class="obs-note"><div class="obs-text">${escapeHtml(o.descricao||o.controle||'Sem descrição')}</div><div class="obs-date">${fmt(o.atualizadoEm)}</div></div>`;
-      });
-      h+=`</div>`;
-    }
-    h+=`</div>`;
+        </div>
+        <div class="equip-summary-side">
+          ${expired?detailChip(`${expired} vencido${expired>1?'s':''}`,'crit'):''}
+          ${soon?detailChip(`${soon} próximo${soon>1?'s':''}`,'warn'):''}
+          ${pend.length?detailChip(`${pend.length} pendência${pend.length>1?'s':''}`,'warn'):detailChip('Sem pendências','ok')}
+          ${obs.length?detailChip(`${obs.length} obs.`):''}
+          ${next?detailChip(`Vcto ${fmt(next.vencimento)}`,chipClassFromStatus(vencimentoSituation(next.vencimento).st)):''}
+          <i class="ti ti-chevron-down equip-expand-icon"></i>
+        </div>
+      </summary>
+      <div class="controle-equipment-body">
+        <div class="controle-two-col">
+          <div class="controle-panel">
+            <div class="controle-subtitle">Vencimentos e Controles</div>
+            ${venc.length?`<div class="compact-list">${venc.map(compactVencimentoRow).join('')}</div>`:`<div class="no-data">Nenhum vencimento cadastrado.</div>`}
+          </div>
+          <div class="controle-panel">
+            <div class="controle-subtitle">Pendências Abertas</div>
+            ${pend.length?`<div class="pend-cards">${pend.map(p=>compactPendenciaRow(p,group)).join('')}</div>`:`<div class="no-data">Nenhuma pendência aberta.</div>`}
+          </div>
+        </div>
+        ${obs.length?`<div class="controle-subtitle">Observações</div><div class="obs-board">${obs.map(o=>`<div class="obs-note"><div class="obs-text">${escapeHtml(o.descricao||o.controle||'Sem descrição')}</div><div class="obs-date">${fmt(o.atualizadoEm)}</div></div>`).join('')}</div>`:''}
+      </div>
+    </details>`;
   });
+  h+=`</div>`;
   return h;
 }
 
@@ -1435,20 +1511,7 @@ function openVessel(name){
   if(!obs.length){h+=`<div class="no-data">Nenhuma observação registrada.</div>`;}
   else{h+=`<div class="obs-board">`;obs.forEach(o=>{h+=`<div class="obs-note"><div class="obs-text">${o.texto}</div><div class="obs-date">${fmt(o.data)}</div></div>`;});h+=`</div>`;}
   h+=`</div>`;
-  if(openVesselDetailWindow(name,h))return;
-  const content=document.getElementById('vessel-modal-content');
-  const modal=document.getElementById('vessel-modal');
-  const title=document.getElementById('vessel-modal-title');
-  if(!content||!modal){
-    document.getElementById('vessel-detail').innerHTML=h;
-    setPage('vessel');
-    return;
-  }
-  content.innerHTML=h;
-  content.scrollTop=0;
-  if(title)title.textContent='Detalhe da embarcacao - '+name;
-  modal.classList.add('open');
-  modal.setAttribute('aria-hidden','false');
+  return displayVesselDetail(name,h);
 }
 function escapeHtml(value){
   return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
