@@ -633,8 +633,6 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
   <div class="nav-item" onclick="setPage('matrix')" id="nav-matrix"><i class="ti ti-table"></i> Fleet Matrix</div>
   <div class="nav-item" onclick="setPage('mapa')" id="nav-mapa"><i class="ti ti-map-2"></i> Mapa da Frota</div>
   <div class="nav-item" onclick="setPage('cert')" id="nav-cert"><i class="ti ti-certificate"></i> Certificações</div>
-  <div class="nav-item" onclick="setPage('pendencias')" id="nav-pendencias"><i class="ti ti-clipboard-list"></i> Pendências</div>
-  <div class="nav-item" onclick="setPage('observacoes')" id="nav-observacoes"><i class="ti ti-notes"></i> Observações</div>
 </nav>
 
 <div class="main">
@@ -749,12 +747,6 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
       </select>
     </div>
     <div class="cert-wrap"><table class="cert-table" id="cert-table"></table></div>
-  </div>
-  <div id="page-pendencias" class="page">
-    <div id="pendencias-content"></div>
-  </div>
-  <div id="page-observacoes" class="page">
-    <div id="observacoes-content"></div>
   </div>
 </div>
 
@@ -941,10 +933,8 @@ const DataService={
   },
   async getData(){
     if(this._cache)return this._cache;
-    const[ri,rp,ro,rpos,rplat,rcontrole]=await Promise.all([
+    const[ri,rpos,rplat,rcontrole]=await Promise.all([
       this.fetch('Inventario'),
-      this.fetch('Pendencias'),
-      this.fetch('Observacoes'),
       this.fetch('Posicoes').catch(()=>[]),
       this.fetch('Plataformas').catch(()=>[]),
       this.fetch('ControleEquipamentos').catch(()=>[])
@@ -959,19 +949,8 @@ const DataService={
       vencimento:this.parseDateBR(this.nk(r,'Vencimento')),
       status:this.nk(r,'Status')||'Operacional',
     })).filter(r=>r.embarcacao&&r.equipamento&&FLEET_NAMES.has(r.embarcacao));
-    const pendencias=rp.map(r=>({
-      embarcacao:this.nk(r,'Embarcacao','Embarcação'),
-      equipamento:this.nk(r,'Equipamento'),
-      descricao:this.nk(r,'Descricao','Descrição'),
-      prioridade:this.nk(r,'Prioridade')||'Média',
-      status:this.nk(r,'Status')||'Aberta',
-      prazo:this.parseDateBR(this.nk(r,'Prazo')),
-    })).filter(r=>r.embarcacao&&FLEET_NAMES.has(r.embarcacao));
-    const observacoes=ro.map(r=>({
-      embarcacao:this.nk(r,'Embarcacao','Embarcação'),
-      texto:this.nk(r,'Texto'),
-      data:this.parseDateBR(this.nk(r,'Data')),
-    })).filter(r=>r.embarcacao&&r.texto&&FLEET_NAMES.has(r.embarcacao));
+    const pendencias=[];
+    const observacoes=[];
     const controleEquipamentos=rcontrole.map(r=>({
       embarcacao:this.nk(r,'Embarcacao','Embarcação'),
       grupo:this.nk(r,'Equipamento','Grupo'),
@@ -980,7 +959,6 @@ const DataService={
       controle:this.nk(r,'Controle'),
       vencimento:this.parseDateBR(this.nk(r,'Vencimento')),
       statusEquipamento:this.nk(r,'StatusEquipamento','Status Equipamento')||'Operacional',
-      statusControle:this.nk(r,'StatusControle','Status Controle'),
       descricao:this.nk(r,'Descricao','Descrição'),
       atualizadoEm:this.parseDateBR(this.nk(r,'AtualizadoEm','Atualizado Em')),
     })).filter(r=>r.embarcacao&&r.grupo&&FLEET_NAMES.has(r.embarcacao));
@@ -1059,9 +1037,6 @@ const CONTROLE_GROUP_CONTROLS={
   Inercial:['Aferição','Observação Operacional'],
   Perfilador:['Certificado','Observação Operacional','Pendência Operacional']
 };
-const CONTROLE_DONE_STATUSES=['concluida','cancelada'];
-const CONTROLE_WAIT_STATUSES=['em andamento','aguardando bordo','aguardando base'];
-
 function cleanKey(v){return String(v||'').trim().toUpperCase();}
 function itemIdentity(i){
   const serial=cleanKey(i.serie);
@@ -1126,10 +1101,6 @@ function controleRowsByVessel(data,embarcacao){
     .map(r=>({...r,grupo:canonicalControleGroup(r.grupo)}));
 }
 function tipoControle(r){return normText(r.tipoRegistro).replace(/\s+/g,'');}
-function isControleOpen(statusControle){
-  const st=normText(statusControle);
-  return !CONTROLE_DONE_STATUSES.includes(st);
-}
 function vencimentoSituation(vencimento){
   if(!vencimento)return{label:'OK',st:'ok',days:null};
   const d=days(vencimento);
@@ -1140,12 +1111,11 @@ function vencimentoSituation(vencimento){
   return{label:'OK',st:'ok',days:d};
 }
 function groupControleStatus(rows){
-  const active=rows.filter(r=>isControleOpen(r.statusControle));
+  const active=rows;
   if(rows.some(r=>normText(r.statusEquipamento)==='inoperante'))return'crit';
   if(active.some(r=>tipoControle(r)==='vencimento'&&vencimentoSituation(r.vencimento).st==='crit'))return'crit';
   if(active.some(r=>tipoControle(r)==='vencimento'&&vencimentoSituation(r.vencimento).st==='warn'))return'warn';
   if(active.some(r=>tipoControle(r)==='pendencia'))return'warn';
-  if(active.some(r=>CONTROLE_WAIT_STATUSES.includes(normText(r.statusControle))))return'warn';
   return'ok';
 }
 function controleGroupsForCard(rows){
@@ -1156,18 +1126,15 @@ function controleGroupsForCard(rows){
   }).filter(Boolean);
 }
 function controleActiveRows(rows){
-  return rows.filter(r=>{
-    const tipo=tipoControle(r);
-    return tipo!=='pendencia'||isControleOpen(r.statusControle);
-  });
+  return rows;
 }
 function controlePendenciasForMini(rows){
-  return rows.filter(r=>tipoControle(r)==='pendencia'&&isControleOpen(r.statusControle))
+  return rows.filter(r=>tipoControle(r)==='pendencia')
     .slice(0,2)
     .map(r=>({
       descricao:r.descricao||r.controle||'Pendência sem descrição',
       prioridade:'Média',
-      status:r.statusControle||'Aberta'
+      status:'Informativo'
     }));
 }
 function controleNextDue(rows){
@@ -1259,7 +1226,7 @@ function renderSummary(data,vessels){
     ?data.controleEquipamentos.filter(r=>names.has(r.embarcacao)&&normText(r.statusEquipamento)==='inoperante').length
     :data.inventario.filter(i=>names.has(i.embarcacao)&&i.status==='Inoperante').length;
   const pab=useControle
-    ?data.controleEquipamentos.filter(r=>names.has(r.embarcacao)&&tipoControle(r)==='pendencia'&&isControleOpen(r.statusControle)).length
+    ?data.controleEquipamentos.filter(r=>names.has(r.embarcacao)&&tipoControle(r)==='pendencia').length
     :data.pendencias.filter(p=>names.has(p.embarcacao)&&(p.status==='Aberta'||p.status==='Em andamento')).length;
   document.getElementById('summary-row').innerHTML=`
     <div class="summary-card"><div class="summary-label">Frota</div><div class="summary-value">${vessels.length}</div></div>
@@ -1335,7 +1302,7 @@ function controleField(label,value){
 function controleStatusBadge(st){
   const status=st||'Operacional';
   const n=normText(status);
-  const cls=n==='inoperante'?'crit':CONTROLE_WAIT_STATUSES.includes(n)?'warn':'ok';
+  const cls=n==='inoperante'?'crit':'ok';
   return`<span class="ec-badge ${cls}">${escapeHtml(status)}</span>`;
 }
 function chipClassFromStatus(st){
@@ -1367,7 +1334,7 @@ function compactPendenciaRow(p,group){
         ${p.vencimento?`<span class="pend-tag"><i class="ti ti-calendar"></i>Prazo ${fmt(p.vencimento)}</span>`:''}
       </div>
     </div>
-    <span class="pend-st">${escapeHtml(p.statusControle||'Aberta')}</span>
+    <span class="pend-st">Pendência</span>
   </div>`;
 }
 function renderControleDetail(name,rows,data){
@@ -1384,7 +1351,7 @@ function renderControleDetail(name,rows,data){
     const sit=vencimentoSituation(r.vencimento);
     return sit.st==='warn'&&sit.days!==null&&sit.days<=30;
   }).length;
-  const pendencias=rows.filter(r=>tipoControle(r)==='pendencia'&&isControleOpen(r.statusControle)).length;
+  const pendencias=rows.filter(r=>tipoControle(r)==='pendencia').length;
   const inoperantes=rows.filter(r=>normText(r.statusEquipamento)==='inoperante').length;
   const img=vesselImage(name);
   const imgPos=vesselImagePosition(name);
@@ -1416,7 +1383,7 @@ function renderControleDetail(name,rows,data){
     if(!gr.length)return;
     const latest=[...gr].sort((a,b)=>String(b.atualizadoEm||'').localeCompare(String(a.atualizadoEm||'')))[0]||{};
     const venc=gr.filter(r=>tipoControle(r)==='vencimento').sort((a,b)=>String(a.vencimento||'9999').localeCompare(String(b.vencimento||'9999')));
-    const pend=gr.filter(r=>tipoControle(r)==='pendencia'&&isControleOpen(r.statusControle));
+    const pend=gr.filter(r=>tipoControle(r)==='pendencia');
     const obs=gr.filter(r=>tipoControle(r)==='observacao').sort((a,b)=>String(b.atualizadoEm||'').localeCompare(String(a.atualizadoEm||'')));
     const st=groupControleStatus(gr);
     const next=venc.find(r=>r.vencimento);
@@ -1598,8 +1565,8 @@ function renderCert(){
     rows=rows.map(r=>({...r,d:r.vencimento?days(r.vencimento):null,sit:vencimentoSituation(r.vencimento)}));
     if(fp===0){}else if(fp===-1)rows=rows.filter(r=>r.d!==null&&!Number.isNaN(r.d)&&r.d<0);else rows=rows.filter(r=>r.d!==null&&!Number.isNaN(r.d)&&r.d>=0&&r.d<=fp);
     rows.sort((a,b)=>(a.d??99999)-(b.d??99999));
-    let h=`<thead><tr><th>Embarcação</th><th>Equipamento</th><th>S/N</th><th>Controle</th><th>Vencimento</th><th>Status Equipamento</th><th>Status Controle</th><th>Situação</th></tr></thead><tbody>`;
-    if(!rows.length)h+=`<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-tertiary);">Nenhum resultado.</td></tr>`;
+    let h=`<thead><tr><th>Embarcação</th><th>Equipamento</th><th>S/N</th><th>Controle</th><th>Vencimento</th><th>Status Equipamento</th><th>Situação</th></tr></thead><tbody>`;
+    if(!rows.length)h+=`<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-tertiary);">Nenhum resultado.</td></tr>`;
     rows.forEach(r=>{
       const cls=r.sit.st==='crit'?'db-expired':r.sit.st==='warn'?'db-warn':'db-ok';
       h+=`<tr>
@@ -1609,7 +1576,6 @@ function renderCert(){
         <td>${escapeHtml(r.controle||'—')}</td>
         <td class="mono">${fmt(r.vencimento)}</td>
         <td>${controleStatusBadge(r.statusEquipamento)}</td>
-        <td>${escapeHtml(r.statusControle||'—')}</td>
         <td><span class="days-badge ${cls}">${r.sit.label}</span></td>
       </tr>`;
     });
@@ -1642,134 +1608,6 @@ function renderCert(){
   h+='</tbody>';
   document.getElementById('cert-table').innerHTML=h;
 }
-
-function renderPendenciasPage(){
-  const data=DataService._cache;if(!data)return;
-  if(hasControleEquipamentos(data)){
-    const rows=data.controleEquipamentos
-      .map(r=>({...r,grupo:canonicalControleGroup(r.grupo)}))
-      .filter(r=>r.grupo&&tipoControle(r)==='pendencia')
-      .sort((a,b)=>a.embarcacao.localeCompare(b.embarcacao)||a.grupo.localeCompare(b.grupo));
-    const abertas=rows.filter(p=>isControleOpen(p.statusControle)).length;
-    const andamento=rows.filter(p=>normText(p.statusControle)==='em andamento').length;
-    const concluidas=rows.filter(p=>normText(p.statusControle)==='concluida').length;
-    let h=`<div class="page-title"><i class="ti ti-clipboard-list"></i>Pendências</div>
-      <div class="page-subtitle">Controle visual das pendências cadastradas na aba ControleEquipamentos.</div>
-      <div class="info-grid">
-        <div class="info-card"><div class="label">Total</div><div class="value">${rows.length}</div></div>
-        <div class="info-card"><div class="label">Abertas</div><div class="value warn">${abertas}</div></div>
-        <div class="info-card"><div class="label">Em andamento</div><div class="value warn">${andamento}</div></div>
-        <div class="info-card"><div class="label">Concluídas</div><div class="value ok">${concluidas}</div></div>
-      </div>
-      <div class="pend-cards">`;
-    if(!rows.length)h+=`<div class="no-data">Nenhuma pendência cadastrada.</div>`;
-    rows.forEach(p=>{
-      h+=`<div class="pend-card p-media">
-        <div class="pend-body">
-          <div class="pend-desc">${escapeHtml(p.descricao||p.controle||'Sem descrição')}</div>
-          <div class="pend-meta">
-            <span class="pend-tag"><i class="ti ti-ship"></i>${escapeHtml(p.embarcacao||'—')}</span>
-            <span class="pend-tag"><i class="ti ti-tool"></i>${escapeHtml(p.grupo||'—')}</span>
-            ${p.vencimento?`<span class="pend-tag"><i class="ti ti-calendar"></i>Prazo ${fmt(p.vencimento)}</span>`:''}
-          </div>
-        </div>
-        <span class="pend-st">${escapeHtml(p.statusControle||'Aberta')}</span>
-      </div>`;
-    });
-    h+=`</div>`;
-    document.getElementById('pendencias-content').innerHTML=h;
-    return;
-  }
-  const rows=[...data.pendencias].sort((a,b)=>
-    (PRIO[a.prioridade]??9)-(PRIO[b.prioridade]??9) ||
-    a.embarcacao.localeCompare(b.embarcacao)
-  );
-  const abertas=rows.filter(p=>p.status==='Aberta').length;
-  const andamento=rows.filter(p=>p.status==='Em andamento').length;
-  const concluidas=rows.filter(p=>p.status==='Concluída').length;
-  const criticas=rows.filter(p=>p.prioridade==='Crítica'||p.prioridade==='Alta').length;
-
-  let h=`<div class="page-title"><i class="ti ti-clipboard-list"></i>Pendências</div>
-    <div class="page-subtitle">Controle visual das pendências cadastradas na planilha, com prioridade, status, prazo e equipamento relacionado.</div>
-    <div class="info-grid">
-      <div class="info-card"><div class="label">Total</div><div class="value">${rows.length}</div></div>
-      <div class="info-card"><div class="label">Abertas</div><div class="value warn">${abertas}</div></div>
-      <div class="info-card"><div class="label">Em andamento</div><div class="value warn">${andamento}</div></div>
-      <div class="info-card"><div class="label">Crítica/Alta</div><div class="value danger">${criticas}</div></div>
-      <div class="info-card"><div class="label">Concluídas</div><div class="value ok">${concluidas}</div></div>
-    </div>
-    <div class="pend-cards">`;
-  if(!rows.length)h+=`<div class="no-data">Nenhuma pendência cadastrada.</div>`;
-  rows.forEach(p=>{
-    const pc=(p.prioridade||'Média').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-    h+=`<div class="pend-card p-${pc}">
-      <div class="pend-body">
-        <div class="pend-desc">${p.descricao||'Sem descrição'}</div>
-        <div class="pend-meta">
-          <span class="pend-tag"><i class="ti ti-ship"></i>${p.embarcacao||'—'}</span>
-          <span class="pend-tag"><i class="ti ti-tool"></i>${p.equipamento||'—'}</span>
-          ${p.prazo?`<span class="pend-tag"><i class="ti ti-calendar"></i>Prazo ${fmt(p.prazo)}</span>`:''}
-        </div>
-      </div>
-      <span class="pend-pri pri-${pc}">${p.prioridade||'Média'}</span>
-      <span class="pend-st">${p.status||'Aberta'}</span>
-    </div>`;
-  });
-  h+=`</div>`;
-  document.getElementById('pendencias-content').innerHTML=h;
-}
-
-function renderObservacoesPage(){
-  const data=DataService._cache;if(!data)return;
-  if(hasControleEquipamentos(data)){
-    const rows=data.controleEquipamentos
-      .map(r=>({...r,grupo:canonicalControleGroup(r.grupo)}))
-      .filter(r=>r.grupo&&tipoControle(r)==='observacao')
-      .sort((a,b)=>a.embarcacao.localeCompare(b.embarcacao)||String(b.atualizadoEm||'').localeCompare(String(a.atualizadoEm||'')));
-    const embarcacoes=new Set(rows.map(o=>o.embarcacao)).size;
-    let h=`<div class="page-title"><i class="ti ti-notes"></i>Observações</div>
-      <div class="page-subtitle">Registro de observações operacionais cadastradas na aba ControleEquipamentos.</div>
-      <div class="info-grid">
-        <div class="info-card"><div class="label">Observações</div><div class="value">${rows.length}</div></div>
-        <div class="info-card"><div class="label">Embarcações com nota</div><div class="value">${embarcacoes}</div></div>
-      </div>
-      <div class="obs-board">`;
-    if(!rows.length)h+=`<div class="no-data">Nenhuma observação cadastrada.</div>`;
-    rows.forEach(o=>{
-      h+=`<div class="obs-note">
-        <div class="obs-vessel">${escapeHtml(o.embarcacao)} · ${escapeHtml(o.grupo)}</div>
-        <div class="obs-text">${escapeHtml(o.descricao||o.controle||'Sem descrição')}</div>
-        <div class="obs-meta">${fmt(o.atualizadoEm)}</div>
-      </div>`;
-    });
-    h+=`</div>`;
-    document.getElementById('observacoes-content').innerHTML=h;
-    return;
-  }
-  const rows=[...data.observacoes].sort((a,b)=>
-    a.embarcacao.localeCompare(b.embarcacao) ||
-    String(b.data||'').localeCompare(String(a.data||''))
-  );
-  const embarcacoes=new Set(rows.map(o=>o.embarcacao)).size;
-  let h=`<div class="page-title"><i class="ti ti-notes"></i>Observações</div>
-    <div class="page-subtitle">Registro de observações operacionais por embarcação. Ideal para informações fixas, exceções de sistema e pontos de atenção.</div>
-    <div class="info-grid">
-      <div class="info-card"><div class="label">Observações</div><div class="value">${rows.length}</div></div>
-      <div class="info-card"><div class="label">Embarcações com nota</div><div class="value">${embarcacoes}</div></div>
-    </div>
-    <div class="obs-board">`;
-  if(!rows.length)h+=`<div class="no-data">Nenhuma observação cadastrada.</div>`;
-  rows.forEach(o=>{
-    h+=`<div class="obs-note">
-      <div class="obs-vessel">${o.embarcacao}</div>
-      <div class="obs-text">${o.texto}</div>
-      <div class="obs-meta">${fmt(o.data)}</div>
-    </div>`;
-  });
-  h+=`</div>`;
-  document.getElementById('observacoes-content').innerHTML=h;
-}
-
 
 let fleetMap=null;
 let fleetMapMarkers=[];
@@ -2167,9 +2005,7 @@ function getSearchMatches(t){
   if(!data)return m;
   data.inventario.forEach(i=>{if([i.embarcacao,i.equipamento,i.modelo,i.fabricante,i.serie,i.rov].join(' ').toLowerCase().includes(t))m.add(i.embarcacao);});
   FLEET.forEach(f=>{if([f.embarcacao,...f.rovs].join(' ').toLowerCase().includes(t))m.add(f.embarcacao);});
-  data.pendencias.forEach(p=>{if([p.embarcacao,p.equipamento,p.descricao,p.prioridade,p.status].join(' ').toLowerCase().includes(t))m.add(p.embarcacao);});
-  data.observacoes.forEach(o=>{if([o.embarcacao,o.texto].join(' ').toLowerCase().includes(t))m.add(o.embarcacao);});
-  (data.controleEquipamentos||[]).forEach(r=>{if([r.embarcacao,r.grupo,r.tag,r.tipoRegistro,r.controle,r.statusEquipamento,r.statusControle,r.descricao].join(' ').toLowerCase().includes(t))m.add(r.embarcacao);});
+  (data.controleEquipamentos||[]).forEach(r=>{if([r.embarcacao,r.grupo,r.tag,r.tipoRegistro,r.controle,r.statusEquipamento,r.descricao].join(' ').toLowerCase().includes(t))m.add(r.embarcacao);});
   return m;
 }
 function getVisibleVessels(){
@@ -2200,6 +2036,7 @@ function renderGrid(vessels){
     :vessels.map(dashCard).join('');
 }
 function setPage(p){
+  if(!document.getElementById('page-'+p))p='dashboard';
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
@@ -2208,8 +2045,6 @@ function setPage(p){
   if(p==='dashboard')renderDashboardView();
   if(p==='mapa')renderMapPage();
   if(p==='cert')renderCert();
-  if(p==='pendencias')renderPendenciasPage();
-  if(p==='observacoes')renderObservacoesPage();
 }
 document.addEventListener('click',function(ev){
   const dd=document.getElementById('vf-dropdown');
@@ -2239,8 +2074,6 @@ async function loadData(force=false,silent=false){
     renderMatrix(data);
     renderMapPage();
     initCertFilters(data);
-    renderPendenciasPage();
-    renderObservacoesPage();
     document.getElementById('load-state').style.display='none';
     document.getElementById('dashboard-content').style.display='block';
   }catch(e){
