@@ -332,6 +332,14 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 .ec-vcto{font-size:10px;font-family:var(--font-mono);}
 .ec-vcto.ok{color:var(--green);}.ec-vcto.warn{color:var(--amber);}.ec-vcto.crit{color:var(--red);}
 .ec-absent-label{font-size:10px;color:var(--text-tertiary);font-style:italic;margin-top:6px;}
+.controle-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-bottom:10px;}
+.controle-field{background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-md);padding:9px 10px;}
+.controle-field-label{font-size:9px;color:var(--text-tertiary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+.controle-field-value{font-size:12px;color:var(--text-primary);line-height:1.4;}
+.controle-subtitle{font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.07em;margin:10px 0 6px;}
+.controle-table{border-collapse:collapse;width:100%;font-size:11px;margin-bottom:8px;}
+.controle-table th{background:var(--bg-secondary);border:1px solid var(--border);padding:6px 8px;font-size:9px;color:var(--text-secondary);font-family:var(--font-mono);text-align:left;text-transform:uppercase;letter-spacing:.05em;}
+.controle-table td{border:1px solid var(--border);padding:7px 8px;vertical-align:top;}
 
 /* PENDÊNCIAS */
 .pend-cards{display:flex;flex-direction:column;gap:6px;}
@@ -872,15 +880,23 @@ const DataService={
     if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.slice(0,10);
     return s;
   },
-  nk(o,...ks){for(const k of ks)if(o[k]!==undefined)return String(o[k]);return'';},
+  headerKey(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');},
+  cell(v){return v===undefined||v===null?'':String(v).trim();},
+  nk(o,...ks){
+    for(const k of ks)if(o[k]!==undefined)return this.cell(o[k]);
+    const wanted=new Set(ks.map(k=>this.headerKey(k)));
+    for(const k of Object.keys(o||{}))if(wanted.has(this.headerKey(k)))return this.cell(o[k]);
+    return'';
+  },
   async getData(){
     if(this._cache)return this._cache;
-    const[ri,rp,ro,rpos,rplat]=await Promise.all([
+    const[ri,rp,ro,rpos,rplat,rcontrole]=await Promise.all([
       this.fetch('Inventario'),
       this.fetch('Pendencias'),
       this.fetch('Observacoes'),
       this.fetch('Posicoes').catch(()=>[]),
-      this.fetch('Plataformas').catch(()=>[])
+      this.fetch('Plataformas').catch(()=>[]),
+      this.fetch('ControleEquipamentos').catch(()=>[])
     ]);
     const inventario=ri.map(r=>({
       embarcacao:this.nk(r,'Embarcacao','Embarcação'),
@@ -905,6 +921,18 @@ const DataService={
       texto:this.nk(r,'Texto'),
       data:this.parseDateBR(this.nk(r,'Data')),
     })).filter(r=>r.embarcacao&&r.texto&&FLEET_NAMES.has(r.embarcacao));
+    const controleEquipamentos=rcontrole.map(r=>({
+      embarcacao:this.nk(r,'Embarcacao','Embarcação'),
+      grupo:this.nk(r,'Equipamento','Grupo'),
+      tag:this.nk(r,'S/N','SN','Serie','Série','Tag'),
+      tipoRegistro:this.nk(r,'TipoRegistro','Tipo Registro'),
+      controle:this.nk(r,'Controle'),
+      vencimento:this.parseDateBR(this.nk(r,'Vencimento')),
+      statusEquipamento:this.nk(r,'StatusEquipamento','Status Equipamento')||'Operacional',
+      statusControle:this.nk(r,'StatusControle','Status Controle'),
+      descricao:this.nk(r,'Descricao','Descrição'),
+      atualizadoEm:this.parseDateBR(this.nk(r,'AtualizadoEm','Atualizado Em')),
+    })).filter(r=>r.embarcacao&&r.grupo&&FLEET_NAMES.has(r.embarcacao));
     const posicoes=rpos.map(r=>{
       const lat=this.parseCoordinate(this.nk(r,'Latitude','LAT','Lat'),90);
       const lon=this.parseCoordinate(this.nk(r,'Longitude','LON','Lon','Lng'),180);
@@ -937,7 +965,7 @@ const DataService={
         longitude:lon,
       };
     }).filter(r=>r.nome&&Number.isFinite(r.latitude)&&Number.isFinite(r.longitude));
-    this._cache={lastUpdate:new Date().toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}),inventario,pendencias,observacoes,posicoes,plataformas};
+    this._cache={lastUpdate:new Date().toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}),inventario,pendencias,observacoes,posicoes,plataformas,controleEquipamentos};
     return this._cache;
   },
   invalidate(){this._cache=null;}
@@ -961,6 +989,27 @@ function vSt(items){
 function nv(items){return items.filter(i=>i.status!=='Spare').sort((a,b)=>new Date(a.vencimento)-new Date(b.vencimento))[0];}
 
 const CARD_EQ_ORDER=['SprintNav','ROVNAV','Mini-Beacon','SVX','SVX2','DVL','Digiquartz','Ranger','HPT','NAS','Navipac PC','Ranger PC','DVR'];
+const CONTROLE_GROUP_ORDER=['HPT','Profundímetro','Guincho','Correntômetro','DVL','Inercial','Perfilador'];
+const CONTROLE_GROUP_LABELS={
+  HPT:'HPT',
+  'Profundímetro':'PROFUNDÍMETRO',
+  Guincho:'GUINCHO',
+  'Correntômetro':'CORRENTÔMETRO',
+  DVL:'DVL',
+  Inercial:'INERCIAL',
+  Perfilador:'PERFILADOR'
+};
+const CONTROLE_GROUP_CONTROLS={
+  HPT:['Admittance Test','Aferição','Inspeção Semestral','Observação Operacional','Pendência Operacional'],
+  'Profundímetro':['Certificado','Observação Operacional','Pendência Operacional'],
+  Guincho:['Teste de Carga','END','Observação Operacional','Pendência Operacional'],
+  'Correntômetro':['Certificado','Observação Operacional','Pendência Operacional'],
+  DVL:['Observação Operacional'],
+  Inercial:['Aferição','Observação Operacional'],
+  Perfilador:['Certificado','Observação Operacional','Pendência Operacional']
+};
+const CONTROLE_DONE_STATUSES=['concluida','cancelada'];
+const CONTROLE_WAIT_STATUSES=['em andamento','aguardando bordo','aguardando base'];
 
 function cleanKey(v){return String(v||'').trim().toUpperCase();}
 function itemIdentity(i){
@@ -1011,7 +1060,81 @@ function cardEquipmentGroups(items){
   });
 }
 
-function buildList(data){  return FLEET.map(f=>{
+function normText(v){return String(v||'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
+function canonicalControleGroup(grupo){
+  const n=normText(grupo);
+  return CONTROLE_GROUP_ORDER.find(g=>normText(g)===n)||'';
+}
+function hasControleEquipamentos(data){
+  return !!(data&&Array.isArray(data.controleEquipamentos)&&data.controleEquipamentos.some(r=>canonicalControleGroup(r.grupo)));
+}
+function controleRowsByVessel(data,embarcacao){
+  if(!data||!Array.isArray(data.controleEquipamentos))return[];
+  return data.controleEquipamentos
+    .filter(r=>r.embarcacao===embarcacao&&canonicalControleGroup(r.grupo))
+    .map(r=>({...r,grupo:canonicalControleGroup(r.grupo)}));
+}
+function tipoControle(r){return normText(r.tipoRegistro).replace(/\s+/g,'');}
+function isControleOpen(statusControle){
+  const st=normText(statusControle);
+  return !CONTROLE_DONE_STATUSES.includes(st);
+}
+function vencimentoSituation(vencimento){
+  if(!vencimento)return{label:'OK',st:'ok',days:null};
+  const d=days(vencimento);
+  if(Number.isNaN(d))return{label:'OK',st:'ok',days:null};
+  if(d<0)return{label:'Vencido',st:'crit',days:d};
+  if(d<=30)return{label:'Próximos 30 dias',st:'warn',days:d};
+  if(d<=60)return{label:'Próximos 60 dias',st:'warn',days:d};
+  return{label:'OK',st:'ok',days:d};
+}
+function groupControleStatus(rows){
+  const active=rows.filter(r=>isControleOpen(r.statusControle));
+  if(rows.some(r=>normText(r.statusEquipamento)==='inoperante'))return'crit';
+  if(active.some(r=>tipoControle(r)==='vencimento'&&vencimentoSituation(r.vencimento).st==='crit'))return'crit';
+  if(active.some(r=>tipoControle(r)==='vencimento'&&vencimentoSituation(r.vencimento).st==='warn'))return'warn';
+  if(active.some(r=>tipoControle(r)==='pendencia'))return'warn';
+  if(active.some(r=>CONTROLE_WAIT_STATUSES.includes(normText(r.statusControle))))return'warn';
+  return'ok';
+}
+function controleGroupsForCard(rows){
+  return CONTROLE_GROUP_ORDER.map(name=>{
+    const arr=rows.filter(r=>r.grupo===name);
+    if(!arr.length)return null;
+    return{name:CONTROLE_GROUP_LABELS[name]||name,count:arr.length,st:groupControleStatus(arr),grupo:name};
+  }).filter(Boolean);
+}
+function controleActiveRows(rows){
+  return rows.filter(r=>{
+    const tipo=tipoControle(r);
+    return tipo!=='pendencia'||isControleOpen(r.statusControle);
+  });
+}
+function controlePendenciasForMini(rows){
+  return rows.filter(r=>tipoControle(r)==='pendencia'&&isControleOpen(r.statusControle))
+    .slice(0,2)
+    .map(r=>({
+      descricao:r.descricao||r.controle||'Pendência sem descrição',
+      prioridade:'Média',
+      status:r.statusControle||'Aberta'
+    }));
+}
+function controleNextDue(rows){
+  return rows.filter(r=>tipoControle(r)==='vencimento'&&r.vencimento)
+    .sort((a,b)=>new Date(a.vencimento)-new Date(b.vencimento))[0];
+}
+
+function buildList(data){
+  const useControle=hasControleEquipamentos(data);
+  return FLEET.map(f=>{
+    if(useControle){
+      const rows=controleRowsByVessel(data,f.embarcacao);
+      const ceq=controleGroupsForCard(rows);
+      const n=controleNextDue(rows);
+      return{name:f.embarcacao,rovs:f.rovs,st:ceq.length?vStFromGroups(ceq):'ok',
+        ceq,eqTotal:controleActiveRows(rows).length,controleMode:true,
+        pends:controlePendenciasForMini(rows),nv:n?{equipamento:n.grupo,vencimento:n.vencimento}:null,nvd:n?days(n.vencimento):null};
+    }
     const its=data.inventario.filter(i=>i.embarcacao===f.embarcacao);
     const current=currentItems(its);
     const ps=data.pendencias.filter(p=>p.embarcacao===f.embarcacao&&p.status!=='Planejada'&&p.status!=='Concluída')
@@ -1022,6 +1145,12 @@ function buildList(data){  return FLEET.map(f=>{
       ceq,eqTotal:ceq.reduce((s,e)=>s+e.count,0),
       pends:ps,nv:n,nvd:n?days(n.vencimento):null};
   });
+}
+
+function vStFromGroups(groups){
+  if(groups.some(g=>g.st==='crit'))return'crit';
+  if(groups.some(g=>g.st==='warn'))return'warn';
+  return'ok';
 }
 
 function vctoTag(v){
@@ -1041,7 +1170,7 @@ function pills(ceq){
 function pendsMini(ps){
   if(!ps.length)return`<div class="pend-none">Sem pendências abertas</div>`;
   return ps.map(p=>{
-    const pc=p.prioridade==='Crítica'?'critica':p.prioridade==='Alta'?'alta':p.prioridade==='Baixa'?'baixa':'media';
+    const pc='media';
     return`<div class="pend-item"><span class="pend-dot ${pc}">•</span><span>${p.descricao}</span></div>`;
   }).join('');
 }
@@ -1064,7 +1193,7 @@ function dashCard(v){
         <div><div class="vessel-name">${v.name}</div><div class="vessel-meta-line">${v.rovs.join(' / ')}</div></div>
         ${vctoTag(v)}
       </div>
-      <div class="systems-head"><span class="systems-title">Equipamentos</span><span class="systems-count">${v.ceq.length} tipos · ${v.eqTotal||0} itens</span></div>
+      <div class="systems-head"><span class="systems-title">Equipamentos</span><span class="systems-count">${v.controleMode?`${v.ceq.length} equipamentos · ${v.eqTotal||0} controles`:`${v.ceq.length} tipos · ${v.eqTotal||0} itens`}</span></div>
       <div class="equip-row">${pills(v.ceq)}</div>
       <div class="pendencias-list">${pendsMini(v.pends)}</div>
     </div>
@@ -1072,10 +1201,15 @@ function dashCard(v){
 }
 function renderSummary(data,vessels){
   const names=new Set(vessels.map(v=>v.name));
+  const useControle=hasControleEquipamentos(data);
   const crit=vessels.filter(v=>v.st==='crit').length;
   const warn=vessels.filter(v=>v.st==='warn').length;
-  const inop=data.inventario.filter(i=>names.has(i.embarcacao)&&i.status==='Inoperante').length;
-  const pab=data.pendencias.filter(p=>names.has(p.embarcacao)&&(p.status==='Aberta'||p.status==='Em andamento')).length;
+  const inop=useControle
+    ?data.controleEquipamentos.filter(r=>names.has(r.embarcacao)&&normText(r.statusEquipamento)==='inoperante').length
+    :data.inventario.filter(i=>names.has(i.embarcacao)&&i.status==='Inoperante').length;
+  const pab=useControle
+    ?data.controleEquipamentos.filter(r=>names.has(r.embarcacao)&&tipoControle(r)==='pendencia'&&isControleOpen(r.statusControle)).length
+    :data.pendencias.filter(p=>names.has(p.embarcacao)&&(p.status==='Aberta'||p.status==='Em andamento')).length;
   document.getElementById('summary-row').innerHTML=`
     <div class="summary-card"><div class="summary-label">Frota</div><div class="summary-value">${vessels.length}</div></div>
     <div class="summary-card"><div class="summary-label">Crítico</div><div class="summary-value danger">${crit}</div></div>
@@ -1127,8 +1261,120 @@ function eCard(item){
 }
 function absentCard(name){return`<div class="equip-card st-absent"><div class="ec-top"><span class="ec-name">${name}</span></div><div class="ec-absent-label">Não embarcado</div></div>`;}
 
+function displayVesselDetail(name,h){
+  if(openVesselDetailWindow(name,h))return;
+  const content=document.getElementById('vessel-modal-content');
+  const modal=document.getElementById('vessel-modal');
+  const title=document.getElementById('vessel-modal-title');
+  if(!content||!modal){
+    document.getElementById('vessel-detail').innerHTML=h;
+    setPage('vessel');
+    return;
+  }
+  content.innerHTML=h;
+  content.scrollTop=0;
+  if(title)title.textContent='Detalhe da embarcacao - '+name;
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden','false');
+}
+
+function controleField(label,value){
+  if(!value)return'';
+  return`<div class="controle-field"><div class="controle-field-label">${escapeHtml(label)}</div><div class="controle-field-value">${escapeHtml(value)}</div></div>`;
+}
+function controleStatusBadge(st){
+  const status=st||'Operacional';
+  const n=normText(status);
+  const cls=n==='inoperante'?'crit':CONTROLE_WAIT_STATUSES.includes(n)?'warn':'ok';
+  return`<span class="ec-badge ${cls}">${escapeHtml(status)}</span>`;
+}
+function renderControleDetail(name,rows,data){
+  const fleet=FLEET.find(f=>f.embarcacao===name);
+  const rovs=fleet?fleet.rovs:[];
+  const groups=controleGroupsForCard(rows);
+  const vs=groups.length?vStFromGroups(groups):'ok';
+  const dc={ok:'#22c55e',warn:'#f59e0b',crit:'#ef4444'}[vs];
+  const bc={ok:'badge-ok',warn:'badge-warn',crit:'badge-crit'}[vs];
+  const bl={ok:'Operacional',warn:'Atenção',crit:'Crítico'}[vs];
+  const img=vesselImage(name);
+  const imgPos=vesselImagePosition(name);
+  let h=`<div class="vd-header ${img?'has-photo':''}">
+    ${img?`<div class="vd-photo"><img src="${img}?v=${ASSET_VERSION}" alt="${escapeHtml(name)}" style="object-position:${imgPos};"></div>`:''}
+    <div class="vd-left">
+      <button class="vd-back" onclick="closeVesselDetail()"><i class="ti ti-x"></i> Fechar detalhe</button>
+      <div class="vd-vessel-name"><span class="vd-dot" style="background:${dc};"></span>${escapeHtml(name)}</div>
+      <div class="vd-meta">
+        ${rovs.map(r=>`<span class="vd-meta-item"><i class="ti ti-robot"></i>${escapeHtml(r)}</span>`).join('')}
+        <span class="vd-meta-item"><i class="ti ti-submarine"></i>${rovs.length} ROV${rovs.length!==1?'s':''}</span>
+      </div>
+    </div>
+    <div class="vd-right">
+      <span class="vd-badge ${bc}">${bl}</span>
+      <span class="vd-update">Atualizado ${data.lastUpdate}</span>
+    </div>
+  </div>`;
+  if(!rows.length)return h+`<div class="vd-section"><div class="no-data">Nenhum controle cadastrado para esta embarcação na aba ControleEquipamentos.</div></div>`;
+  CONTROLE_GROUP_ORDER.forEach(group=>{
+    const gr=rows.filter(r=>r.grupo===group);
+    if(!gr.length)return;
+    const latest=[...gr].sort((a,b)=>String(b.atualizadoEm||'').localeCompare(String(a.atualizadoEm||'')))[0]||{};
+    const venc=gr.filter(r=>tipoControle(r)==='vencimento').sort((a,b)=>String(a.vencimento||'9999').localeCompare(String(b.vencimento||'9999')));
+    const pend=gr.filter(r=>tipoControle(r)==='pendencia'&&isControleOpen(r.statusControle));
+    const obs=gr.filter(r=>tipoControle(r)==='observacao').sort((a,b)=>String(b.atualizadoEm||'').localeCompare(String(a.atualizadoEm||'')));
+    h+=`<div class="vd-section"><div class="vd-sec-title"><i class="ti ti-settings-check"></i>${escapeHtml(CONTROLE_GROUP_LABELS[group]||group)}</div>`;
+    h+=`<div class="controle-detail-grid">
+      ${controleField('S/N',latest.tag)}
+      ${controleField('Status do equipamento',latest.statusEquipamento)}
+      ${controleField('Atualizado em',fmt(latest.atualizadoEm))}
+    </div>`;
+    if(venc.length){
+      h+=`<div class="controle-subtitle">Vencimentos</div><table class="controle-table"><thead><tr><th>Controle</th><th>Vencimento</th><th>Situação</th><th>Status</th></tr></thead><tbody>`;
+      venc.forEach(r=>{
+        const sit=vencimentoSituation(r.vencimento);
+        const cls=sit.st==='crit'?'db-expired':sit.st==='warn'?'db-warn':'db-ok';
+        h+=`<tr><td>${escapeHtml(r.controle||'Vencimento')}</td><td class="mono">${fmt(r.vencimento)}</td><td><span class="days-badge ${cls}">${sit.label}</span></td><td>${controleStatusBadge(r.statusControle||r.statusEquipamento)}</td></tr>`;
+      });
+      h+=`</tbody></table>`;
+    }else if(group!=='DVL'){
+      h+=`<div class="controle-subtitle">Vencimentos</div><div class="no-data">Nenhum vencimento cadastrado.</div>`;
+    }
+    h+=`<div class="controle-subtitle">Pendências</div>`;
+    if(!pend.length)h+=`<div class="no-data">Nenhuma pendência aberta.</div>`;
+    else{
+      h+=`<div class="pend-cards">`;
+      pend.forEach(p=>{
+        h+=`<div class="pend-card p-media">
+          <div class="pend-body">
+            <div class="pend-desc">${escapeHtml(p.descricao||p.controle||'Sem descrição')}</div>
+            <div class="pend-meta">
+              <span class="pend-tag"><i class="ti ti-tool"></i>${escapeHtml(p.controle||group)}</span>
+              ${p.vencimento?`<span class="pend-tag"><i class="ti ti-calendar"></i>Prazo ${fmt(p.vencimento)}</span>`:''}
+            </div>
+          </div>
+          <span class="pend-st">${escapeHtml(p.statusControle||'Aberta')}</span>
+        </div>`;
+      });
+      h+=`</div>`;
+    }
+    h+=`<div class="controle-subtitle">Observações</div>`;
+    if(!obs.length)h+=`<div class="no-data">Nenhuma observação registrada.</div>`;
+    else{
+      h+=`<div class="obs-board">`;
+      obs.forEach(o=>{
+        h+=`<div class="obs-note"><div class="obs-text">${escapeHtml(o.descricao||o.controle||'Sem descrição')}</div><div class="obs-date">${fmt(o.atualizadoEm)}</div></div>`;
+      });
+      h+=`</div>`;
+    }
+    h+=`</div>`;
+  });
+  return h;
+}
+
 function openVessel(name){
   const data=DataService._cache; if(!data)return;
+  if(hasControleEquipamentos(data)){
+    return displayVesselDetail(name,renderControleDetail(name,controleRowsByVessel(data,name),data));
+  }
   const fleet=FLEET.find(f=>f.embarcacao===name);
   const its=data.inventario.filter(i=>i.embarcacao===name);
   const pends=data.pendencias.filter(p=>p.embarcacao===name).sort((a,b)=>(PRIO[a.prioridade]??9)-(PRIO[b.prioridade]??9));
@@ -1255,13 +1501,44 @@ function initCertFilters(data){
   vs.innerHTML='<option value="">Todas as embarcações</option>';
   eq.innerHTML='<option value="">Todos os equipamentos</option>';
   FLEET.forEach(f=>{const o=document.createElement('option');o.value=f.embarcacao;o.textContent=f.embarcacao;vs.appendChild(o);});
-  [...new Set(data.inventario.map(i=>i.equipamento))].sort().forEach(e=>{const o=document.createElement('option');o.value=e;o.textContent=e;eq.appendChild(o);});
+  const opts=hasControleEquipamentos(data)
+    ?CONTROLE_GROUP_ORDER.filter(g=>data.controleEquipamentos.some(r=>canonicalControleGroup(r.grupo)===g))
+    :[...new Set(data.inventario.map(i=>i.equipamento))].sort();
+  opts.forEach(e=>{const o=document.createElement('option');o.value=e;o.textContent=e;eq.appendChild(o);});
 }
 function renderCert(){
   const data=DataService._cache;if(!data)return;
   const fv=document.getElementById('cf-v').value;
   const fe=document.getElementById('cf-e').value;
   const fp=parseInt(document.getElementById('cf-p').value);
+  if(hasControleEquipamentos(data)){
+    let rows=data.controleEquipamentos
+      .map(r=>({...r,grupo:canonicalControleGroup(r.grupo)}))
+      .filter(r=>r.grupo&&tipoControle(r)==='vencimento');
+    if(fv)rows=rows.filter(r=>r.embarcacao===fv);
+    if(fe)rows=rows.filter(r=>r.grupo===fe);
+    rows=rows.map(r=>({...r,d:r.vencimento?days(r.vencimento):null,sit:vencimentoSituation(r.vencimento)}));
+    if(fp===0){}else if(fp===-1)rows=rows.filter(r=>r.d!==null&&!Number.isNaN(r.d)&&r.d<0);else rows=rows.filter(r=>r.d!==null&&!Number.isNaN(r.d)&&r.d>=0&&r.d<=fp);
+    rows.sort((a,b)=>(a.d??99999)-(b.d??99999));
+    let h=`<thead><tr><th>Embarcação</th><th>Equipamento</th><th>S/N</th><th>Controle</th><th>Vencimento</th><th>Status Equipamento</th><th>Status Controle</th><th>Situação</th></tr></thead><tbody>`;
+    if(!rows.length)h+=`<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-tertiary);">Nenhum resultado.</td></tr>`;
+    rows.forEach(r=>{
+      const cls=r.sit.st==='crit'?'db-expired':r.sit.st==='warn'?'db-warn':'db-ok';
+      h+=`<tr>
+        <td><span class="cert-link" onclick="openVessel('${r.embarcacao.replace(/'/g,"\\'")}')">${escapeHtml(r.embarcacao)}</span></td>
+        <td>${escapeHtml(r.grupo)}</td>
+        <td class="mono">${escapeHtml(r.tag||'—')}</td>
+        <td>${escapeHtml(r.controle||'—')}</td>
+        <td class="mono">${fmt(r.vencimento)}</td>
+        <td>${controleStatusBadge(r.statusEquipamento)}</td>
+        <td>${escapeHtml(r.statusControle||'—')}</td>
+        <td><span class="days-badge ${cls}">${r.sit.label}</span></td>
+      </tr>`;
+    });
+    h+='</tbody>';
+    document.getElementById('cert-table').innerHTML=h;
+    return;
+  }
   let rows=data.inventario.filter(i=>i.status!=='Spare');
   if(fv)rows=rows.filter(r=>r.embarcacao===fv);
   if(fe)rows=rows.filter(r=>r.equipamento===fe);
@@ -1290,6 +1567,41 @@ function renderCert(){
 
 function renderPendenciasPage(){
   const data=DataService._cache;if(!data)return;
+  if(hasControleEquipamentos(data)){
+    const rows=data.controleEquipamentos
+      .map(r=>({...r,grupo:canonicalControleGroup(r.grupo)}))
+      .filter(r=>r.grupo&&tipoControle(r)==='pendencia')
+      .sort((a,b)=>a.embarcacao.localeCompare(b.embarcacao)||a.grupo.localeCompare(b.grupo));
+    const abertas=rows.filter(p=>isControleOpen(p.statusControle)).length;
+    const andamento=rows.filter(p=>normText(p.statusControle)==='em andamento').length;
+    const concluidas=rows.filter(p=>normText(p.statusControle)==='concluida').length;
+    let h=`<div class="page-title"><i class="ti ti-clipboard-list"></i>Pendências</div>
+      <div class="page-subtitle">Controle visual das pendências cadastradas na aba ControleEquipamentos.</div>
+      <div class="info-grid">
+        <div class="info-card"><div class="label">Total</div><div class="value">${rows.length}</div></div>
+        <div class="info-card"><div class="label">Abertas</div><div class="value warn">${abertas}</div></div>
+        <div class="info-card"><div class="label">Em andamento</div><div class="value warn">${andamento}</div></div>
+        <div class="info-card"><div class="label">Concluídas</div><div class="value ok">${concluidas}</div></div>
+      </div>
+      <div class="pend-cards">`;
+    if(!rows.length)h+=`<div class="no-data">Nenhuma pendência cadastrada.</div>`;
+    rows.forEach(p=>{
+      h+=`<div class="pend-card p-media">
+        <div class="pend-body">
+          <div class="pend-desc">${escapeHtml(p.descricao||p.controle||'Sem descrição')}</div>
+          <div class="pend-meta">
+            <span class="pend-tag"><i class="ti ti-ship"></i>${escapeHtml(p.embarcacao||'—')}</span>
+            <span class="pend-tag"><i class="ti ti-tool"></i>${escapeHtml(p.grupo||'—')}</span>
+            ${p.vencimento?`<span class="pend-tag"><i class="ti ti-calendar"></i>Prazo ${fmt(p.vencimento)}</span>`:''}
+          </div>
+        </div>
+        <span class="pend-st">${escapeHtml(p.statusControle||'Aberta')}</span>
+      </div>`;
+    });
+    h+=`</div>`;
+    document.getElementById('pendencias-content').innerHTML=h;
+    return;
+  }
   const rows=[...data.pendencias].sort((a,b)=>
     (PRIO[a.prioridade]??9)-(PRIO[b.prioridade]??9) ||
     a.embarcacao.localeCompare(b.embarcacao)
@@ -1331,6 +1643,31 @@ function renderPendenciasPage(){
 
 function renderObservacoesPage(){
   const data=DataService._cache;if(!data)return;
+  if(hasControleEquipamentos(data)){
+    const rows=data.controleEquipamentos
+      .map(r=>({...r,grupo:canonicalControleGroup(r.grupo)}))
+      .filter(r=>r.grupo&&tipoControle(r)==='observacao')
+      .sort((a,b)=>a.embarcacao.localeCompare(b.embarcacao)||String(b.atualizadoEm||'').localeCompare(String(a.atualizadoEm||'')));
+    const embarcacoes=new Set(rows.map(o=>o.embarcacao)).size;
+    let h=`<div class="page-title"><i class="ti ti-notes"></i>Observações</div>
+      <div class="page-subtitle">Registro de observações operacionais cadastradas na aba ControleEquipamentos.</div>
+      <div class="info-grid">
+        <div class="info-card"><div class="label">Observações</div><div class="value">${rows.length}</div></div>
+        <div class="info-card"><div class="label">Embarcações com nota</div><div class="value">${embarcacoes}</div></div>
+      </div>
+      <div class="obs-board">`;
+    if(!rows.length)h+=`<div class="no-data">Nenhuma observação cadastrada.</div>`;
+    rows.forEach(o=>{
+      h+=`<div class="obs-note">
+        <div class="obs-vessel">${escapeHtml(o.embarcacao)} · ${escapeHtml(o.grupo)}</div>
+        <div class="obs-text">${escapeHtml(o.descricao||o.controle||'Sem descrição')}</div>
+        <div class="obs-meta">${fmt(o.atualizadoEm)}</div>
+      </div>`;
+    });
+    h+=`</div>`;
+    document.getElementById('observacoes-content').innerHTML=h;
+    return;
+  }
   const rows=[...data.observacoes].sort((a,b)=>
     a.embarcacao.localeCompare(b.embarcacao) ||
     String(b.data||'').localeCompare(String(a.data||''))
@@ -1754,6 +2091,7 @@ function getSearchMatches(t){
   FLEET.forEach(f=>{if([f.embarcacao,...f.rovs].join(' ').toLowerCase().includes(t))m.add(f.embarcacao);});
   data.pendencias.forEach(p=>{if([p.embarcacao,p.equipamento,p.descricao,p.prioridade,p.status].join(' ').toLowerCase().includes(t))m.add(p.embarcacao);});
   data.observacoes.forEach(o=>{if([o.embarcacao,o.texto].join(' ').toLowerCase().includes(t))m.add(o.embarcacao);});
+  (data.controleEquipamentos||[]).forEach(r=>{if([r.embarcacao,r.grupo,r.tag,r.tipoRegistro,r.controle,r.statusEquipamento,r.statusControle,r.descricao].join(' ').toLowerCase().includes(t))m.add(r.embarcacao);});
   return m;
 }
 function getVisibleVessels(){
