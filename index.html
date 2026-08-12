@@ -215,7 +215,7 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 /* FLEET GRID */
 .section-label{font-size:10px;font-weight:500;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.08em;font-family:var(--font-mono);margin-bottom:10px;}
 .vessels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;}
-.vessel-card{background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;display:block;position:relative;cursor:pointer;transition:border-color .15s,transform .15s,background .15s;}
+.vessel-card{background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;display:block;position:relative;cursor:pointer;transition:border-color .15s,transform .15s,background .15s;text-decoration:none;color:inherit;}
 .vessel-card:hover{border-color:var(--accent-border);transform:translateY(-1px);background:var(--bg-secondary);}
 .vessel-stripe{position:absolute;left:0;top:0;bottom:0;width:3px;z-index:3;}
 .stripe-ok{background:var(--green);}.stripe-warn{background:var(--amber);}.stripe-critical{background:var(--red);}
@@ -266,6 +266,8 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 .matrix-table td{border:1px solid var(--border);padding:4px 6px;vertical-align:middle;}
 .matrix-table td.vnc{font-weight:600;white-space:nowrap;background:var(--bg-secondary);font-size:11px;cursor:pointer;color:var(--text-primary);text-align:left;padding-left:10px;}
 .matrix-table td.vnc:hover{color:var(--accent);}
+.matrix-table td.vnc a{color:inherit;text-decoration:none;}
+.matrix-table td.vnc a:hover{text-decoration:underline;}
 .matrix-table td.rc{font-size:10px;color:var(--text-tertiary);background:var(--bg-secondary);white-space:nowrap;text-align:left;}
 .split-cell{display:flex;align-items:center;justify-content:center;height:24px;}
 .split-half{flex:1;display:flex;align-items:center;justify-content:center;}
@@ -831,14 +833,14 @@ const THEME_OPTIONS=[
   {id:'contrast',label:'Alto Contraste'}
 ];
 const FONT_LEVELS=[
-  {label:'80%',zoom:1.1},
-  {label:'90%',zoom:1.2},
-  {label:'100%',zoom:1.3},
-  {label:'110%',zoom:1.4},
-  {label:'120%',zoom:1.5},
-  {label:'130%',zoom:1.6},
-  {label:'140%',zoom:1.7},
-  {label:'150%',zoom:1.8}
+  {label:'80%',zoom:.8},
+  {label:'90%',zoom:.9},
+  {label:'100%',zoom:1},
+  {label:'110%',zoom:1.1},
+  {label:'120%',zoom:1.2},
+  {label:'130%',zoom:1.3},
+  {label:'140%',zoom:1.4},
+  {label:'150%',zoom:1.5}
 ];
 const DEFAULT_FONT_LEVEL=2;
 const FONT_STORAGE_KEY='ci-font-level-v3';
@@ -1172,10 +1174,23 @@ function pendsMini(ps){
 }
 function vesselImage(name){return VESSEL_IMAGES[name]||'';}
 function vesselImagePosition(name){return VESSEL_IMAGE_POSITIONS[name]||'center center';}
+function vesselDetailUrl(name){
+  const url=new URL(window.location.href);
+  url.searchParams.set('vessel',name);
+  return url.href;
+}
+function openVesselFromLink(ev,name){
+  if(ev&&(ev.button!==0||ev.ctrlKey||ev.metaKey||ev.shiftKey||ev.altKey))return;
+  ev?.preventDefault();
+  openVessel(name,true);
+}
+function vesselLink(name,label,cls=''){
+  return`<a class="${cls}" href="${escapeHtml(vesselDetailUrl(name))}" onclick="openVesselFromLink(event,'${name.replace(/'/g,"\\'")}')">${escapeHtml(label||name)}</a>`;
+}
 function dashCard(v){
   const sc={ok:'stripe-ok',warn:'stripe-warn',crit:'stripe-critical'}[v.st];
   const img=vesselImage(v.name);
-  return`<div class="vessel-card" onclick="openVessel('${v.name.replace(/'/g,"\\'")}')">
+  return`<a class="vessel-card" href="${escapeHtml(vesselDetailUrl(v.name))}" onclick="openVesselFromLink(event,'${v.name.replace(/'/g,"\\'")}')">
     <div class="vessel-stripe ${sc}"></div>
     ${img?`<div class="vessel-photo">
       <img src="${img}?v=${ASSET_VERSION}" alt="${escapeHtml(v.name)}" loading="lazy" style="object-position:${vesselImagePosition(v.name)};" onerror="this.closest('.vessel-photo').classList.add('image-missing');">
@@ -1193,7 +1208,7 @@ function dashCard(v){
       <div class="equip-row">${pills(v.ceq)}</div>
       <div class="pendencias-list">${pendsMini(v.pends)}</div>
     </div>
-  </div>`;
+  </a>`;
 }
 function renderSummary(data,vessels){
   const names=new Set(vessels.map(v=>v.name));
@@ -1223,7 +1238,7 @@ function renderMatrix(data){
     const its=data.inventario.filter(i=>i.embarcacao===f.embarcacao);
     const vs=vSt(its);
     const sc={ok:'#22c55e',warn:'#f59e0b',crit:'#ef4444'}[vs];
-    h+=`<tr><td class="vnc" style="border-left:3px solid ${sc};" onclick="openVessel('${f.embarcacao.replace(/'/g,"\\'")}')">${f.embarcacao}</td>`;
+    h+=`<tr><td class="vnc" style="border-left:3px solid ${sc};">${vesselLink(f.embarcacao,f.embarcacao)}</td>`;
     h+=`<td class="rc">${f.rovs.join(' / ')}</td>`;
     eqs.forEach(eq=>{
       if(SPLIT_EQ.has(eq)&&f.rovs.length>1){
@@ -1257,10 +1272,19 @@ function eCard(item){
 }
 function absentCard(name){return`<div class="equip-card st-absent"><div class="ec-top"><span class="ec-name">${name}</span></div><div class="ec-absent-label">Não embarcado</div></div>`;}
 
-function displayVesselDetail(name,h){
+function setVesselParam(name,replace=false){
+  const url=new URL(window.location.href);
+  if(name)url.searchParams.set('vessel',name);
+  else url.searchParams.delete('vessel');
+  const next=url.pathname+url.search+url.hash;
+  if(next===window.location.pathname+window.location.search+window.location.hash)return;
+  history[replace?'replaceState':'pushState']({vessel:name||null},'',next);
+}
+function displayVesselDetail(name,h,updateUrl=false,replaceUrl=false){
   const active=document.querySelector('.page.active');
   const activePage=active?active.id.replace('page-',''):'dashboard';
   if(activePage&&activePage!=='vessel')detailReturnPage=activePage;
+  if(updateUrl)setVesselParam(name,replaceUrl);
   const target=document.getElementById('vessel-detail');
   if(!target)return;
   target.innerHTML=`<div class="vessel-detail-page">${h}</div>`;
@@ -1406,10 +1430,11 @@ function renderControleDetail(name,rows,data){
   return h;
 }
 
-function openVessel(name){
+function openVessel(name,updateUrl=false,replaceUrl=false,returnPage=null){
+  if(returnPage)detailReturnPage=returnPage;
   const data=DataService._cache; if(!data)return;
   if(hasControleEquipamentos(data)){
-    return displayVesselDetail(name,renderControleDetail(name,controleRowsByVessel(data,name),data));
+    return displayVesselDetail(name,renderControleDetail(name,controleRowsByVessel(data,name),data),updateUrl,replaceUrl);
   }
   const fleet=FLEET.find(f=>f.embarcacao===name);
   const its=data.inventario.filter(i=>i.embarcacao===name);
@@ -1471,43 +1496,13 @@ function openVessel(name){
   if(!obs.length){h+=`<div class="no-data">Nenhuma observação registrada.</div>`;}
   else{h+=`<div class="obs-board">`;obs.forEach(o=>{h+=`<div class="obs-note"><div class="obs-text">${o.texto}</div><div class="obs-date">${fmt(o.data)}</div></div>`;});h+=`</div>`;}
   h+=`</div>`;
-  return displayVesselDetail(name,h);
+  return displayVesselDetail(name,h,updateUrl,replaceUrl);
 }
 function escapeHtml(value){
   return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
-function openVesselDetailWindow(name,html){
-  const win=window.open('','_blank','width=1280,height=860,scrollbars=yes,resizable=yes');
-  if(!win)return false;
-  const style=document.querySelector('style')?.textContent||'';
-  const theme=document.body.getAttribute('data-theme')||'dark';
-  const zoom=document.body.style.getPropertyValue('--app-zoom')||'1';
-  win.document.open();
-  win.document.write(`<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<base href="${escapeHtml(location.href)}">
-<title>${escapeHtml(name)} - CI Survey Brasil</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
-<style>${style}</style>
-<style>
-body{padding:16px;overflow:auto;}
-.detail-window-shell{max-width:1180px;margin:0 auto;}
-.detail-window-shell .vd-header{margin-bottom:14px;}
-</style>
-</head>
-<body data-theme="${escapeHtml(theme)}" style="--app-zoom:${escapeHtml(zoom)};">
-<div class="detail-window-shell">${html}</div>
-<script>function closeVesselDetail(){window.close();}<\/script>
-</body>
-</html>`);
-  win.document.close();
-  win.focus();
-  return true;
-}
 function closeVesselDetail(){
+  setVesselParam('',false);
   setPage(detailReturnPage||'dashboard');
   requestAnimationFrame(()=>window.scrollTo(0,0));
 }
@@ -1543,7 +1538,7 @@ function renderCert(){
     rows.forEach(r=>{
       const cls=r.sit.st==='crit'?'db-expired':r.sit.st==='warn'?'db-warn':'db-ok';
       h+=`<tr>
-        <td><span class="cert-link" onclick="openVessel('${r.embarcacao.replace(/'/g,"\\'")}')">${escapeHtml(r.embarcacao)}</span></td>
+        <td>${vesselLink(r.embarcacao,r.embarcacao,'cert-link')}</td>
         <td>${escapeHtml(r.grupo)}</td>
         <td class="mono">${escapeHtml(r.tag||'—')}</td>
         <td>${escapeHtml(r.controle||'—')}</td>
@@ -1569,7 +1564,7 @@ function renderCert(){
     const dc={ok:'#22c55e',warn:'#f59e0b',crit:'#ef4444'}[st]||'#6b7280';
     const[dc2,dl]=(r.d===null||Number.isNaN(r.d))?['db-ok','Sem vencimento']:r.d<0?['db-expired',`Vencido ${Math.abs(r.d)}d`]:r.d<=30?['db-crit',`${r.d}d`]:r.d<=60?['db-warn',`${r.d}d`]:['db-ok',`${r.d}d`];
     h+=`<tr>
-      <td><span class="cert-link" onclick="openVessel('${r.embarcacao.replace(/'/g,"\\'")}')">${r.embarcacao}</span></td>
+      <td>${vesselLink(r.embarcacao,r.embarcacao,'cert-link')}</td>
       <td class="mono">${r.rov}</td><td>${r.equipamento}</td>
       <td class="mono">${r.modelo}</td>
       <td class="mono" style="font-weight:700;">${r.serie||'—'}</td>
@@ -1775,7 +1770,7 @@ function popupHtml(p){
       ${p.statusAIS?`Status AIS: ${p.statusAIS}<br>`:''}${p.destino?`Destino: ${p.destino}<br>`:''}${p.eta?`ETA: ${p.eta}<br>`:''}
       ${p.ultimaPosicao?`Última posição: ${p.ultimaPosicao}`:''}
     </div>
-    <span class="popup-link" onclick="openVessel('${p.embarcacao.replace(/'/g,"\\'")}')">Abrir detalhe da embarcação</span>`;
+    ${vesselLink(p.embarcacao,'Abrir detalhe da embarcação','popup-link')}`;
 }
 function platformPopupHtml(p){
   return `<div class="popup-title">${p.nome}</div>
@@ -2020,6 +2015,14 @@ function setPage(p){
   if(p==='mapa')renderMapPage();
   if(p==='cert')renderCert();
 }
+function openVesselFromUrl(replaceUrl=false){
+  const name=new URLSearchParams(window.location.search).get('vessel');
+  if(name&&FLEET_NAMES.has(name)){
+    openVessel(name,false,replaceUrl,'dashboard');
+    return true;
+  }
+  return false;
+}
 document.addEventListener('click',function(ev){
   const dd=document.getElementById('vf-dropdown');
   if(dd&&!dd.contains(ev.target))dd.classList.remove('open');
@@ -2028,6 +2031,10 @@ document.addEventListener('click',function(ev){
 });
 document.addEventListener('keydown',function(ev){
   if(ev.key==='Escape')closeVesselModal();
+});
+window.addEventListener('popstate',function(){
+  if(openVesselFromUrl(true))return;
+  setPage(detailReturnPage||'dashboard');
 });
 async function loadData(force=false,silent=false){
   if(isLoadingData)return;
@@ -2048,6 +2055,7 @@ async function loadData(force=false,silent=false){
     renderMatrix(data);
     renderMapPage();
     initCertFilters(data);
+    openVesselFromUrl(true);
     document.getElementById('load-state').style.display='none';
     document.getElementById('dashboard-content').style.display='block';
   }catch(e){
