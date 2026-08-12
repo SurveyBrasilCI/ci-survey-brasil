@@ -808,6 +808,8 @@ const THEME_OPTIONS=[
   {id:'graphite',label:'Grafite'},
   {id:'contrast',label:'Alto Contraste'}
 ];
+const DEFAULT_THEME='vacation';
+const LEGACY_THEME_MAP={ocean:'vacation',forest:'vacation',amber:'vacation'};
 const FONT_LEVELS=[
   {label:'80%',zoom:.8},
   {label:'90%',zoom:.9},
@@ -824,19 +826,22 @@ let fontLevel=parseInt(localStorage.getItem(FONT_STORAGE_KEY)||String(DEFAULT_FO
 if(Number.isNaN(fontLevel)||fontLevel<0||fontLevel>=FONT_LEVELS.length)fontLevel=DEFAULT_FONT_LEVEL;
 
 function applyTheme(){
-  const saved=localStorage.getItem('ci-theme')||'dark';
-  const theme=THEME_OPTIONS.find(t=>t.id===saved)||THEME_OPTIONS[0];
+  const saved=localStorage.getItem('ci-theme')||DEFAULT_THEME;
+  const normalized=LEGACY_THEME_MAP[saved]||saved;
+  const theme=THEME_OPTIONS.find(t=>t.id===normalized)||THEME_OPTIONS.find(t=>t.id===DEFAULT_THEME)||THEME_OPTIONS[0];
+  if(saved!==theme.id)localStorage.setItem('ci-theme',theme.id);
   document.body.setAttribute('data-theme',theme.id);
   const sel=document.getElementById('theme-select');
   if(sel)sel.value=theme.id;
 }
 function setTheme(themeId){
-  const theme=THEME_OPTIONS.find(t=>t.id===themeId)||THEME_OPTIONS[0];
+  const normalized=LEGACY_THEME_MAP[themeId]||themeId;
+  const theme=THEME_OPTIONS.find(t=>t.id===normalized)||THEME_OPTIONS.find(t=>t.id===DEFAULT_THEME)||THEME_OPTIONS[0];
   localStorage.setItem('ci-theme',theme.id);
   applyTheme();
 }
 function cycleTheme(){
-  const current=document.body.getAttribute('data-theme')||localStorage.getItem('ci-theme')||'dark';
+  const current=document.body.getAttribute('data-theme')||localStorage.getItem('ci-theme')||DEFAULT_THEME;
   const idx=THEME_OPTIONS.findIndex(t=>t.id===current);
   const next=THEME_OPTIONS[(idx+1+THEME_OPTIONS.length)%THEME_OPTIONS.length];
   setTheme(next.id);
