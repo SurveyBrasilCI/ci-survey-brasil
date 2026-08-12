@@ -220,6 +220,7 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 .vessel-stripe{position:absolute;left:0;top:0;bottom:0;width:3px;z-index:3;}
 .stripe-ok{background:var(--green);}.stripe-warn{background:var(--amber);}.stripe-critical{background:var(--red);}
 .vessel-photo{height:130px;position:relative;background:linear-gradient(135deg,var(--bg-secondary),var(--bg-tertiary));overflow:hidden;}
+.vessel-photo.image-missing{display:none;}
 .vessel-photo img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(.95) contrast(.95);transition:transform .2s,filter .2s;}
 .vessel-card:hover .vessel-photo img{transform:scale(1.025);filter:saturate(1.05) contrast(1);}
 .vessel-photo::after{content:'';position:absolute;left:0;right:0;bottom:0;height:60%;background:linear-gradient(to top,rgba(15,22,35,.95),rgba(15,22,35,.25),rgba(15,22,35,0));pointer-events:none;}
@@ -288,6 +289,9 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
 .vd-header.has-photo .vd-left,.vd-header.has-photo .vd-right{position:relative;z-index:1;padding:18px 20px;}
 .vd-header.has-photo .vd-left{align-self:flex-end;}
 .vd-header.has-photo .vd-right{align-self:flex-end;}
+.vd-header.image-missing{min-height:0;padding:14px 16px;align-items:flex-start;}
+.vd-header.image-missing .vd-photo{display:none;}
+.vd-header.image-missing .vd-left,.vd-header.image-missing .vd-right{padding:0;position:static;}
 .vd-left{flex:1;min-width:0;}
 .vd-back{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--text-tertiary);cursor:pointer;margin-bottom:10px;background:none;border:none;font-family:var(--font-sans);padding:0;transition:color .12s;}
 .vd-back:hover{color:var(--accent);}
@@ -1225,11 +1229,19 @@ function vesselImage(name){return VESSEL_IMAGES[name]||'';}
 function vesselImagePosition(name){return VESSEL_IMAGE_POSITIONS[name]||'center center';}
 function dashCard(v){
   const sc={ok:'stripe-ok',warn:'stripe-warn',crit:'stripe-critical'}[v.st];
+  const img=vesselImage(v.name);
   return`<div class="vessel-card" onclick="openVessel('${v.name.replace(/'/g,"\\'")}')">
     <div class="vessel-stripe ${sc}"></div>
+    ${img?`<div class="vessel-photo">
+      <img src="${img}?v=${ASSET_VERSION}" alt="${escapeHtml(v.name)}" loading="lazy" style="object-position:${vesselImagePosition(v.name)};" onerror="this.closest('.vessel-photo').classList.add('image-missing');">
+      <div class="vessel-photo-label">
+        <div class="vessel-photo-name">${escapeHtml(v.name)}</div>
+        <div class="vessel-photo-rovs">${v.rovs.map(escapeHtml).join(' / ')}</div>
+      </div>
+    </div>`:''}
     <div class="vessel-body">
       <div class="vessel-card-top">
-        <div><div class="vessel-name">${v.name}</div><div class="vessel-meta-line">${v.rovs.join(' / ')}</div></div>
+        <div><div class="vessel-name">${escapeHtml(v.name)}</div><div class="vessel-meta-line">${v.rovs.map(escapeHtml).join(' / ')}</div></div>
         ${vctoTag(v)}
       </div>
       <div class="systems-head"><span class="systems-title">Equipamentos</span><span class="systems-count">${v.controleMode?`${v.ceq.length} equipamentos · ${v.eqTotal||0} controles`:`${v.ceq.length} tipos · ${v.eqTotal||0} itens`}</span></div>
@@ -1374,7 +1386,10 @@ function renderControleDetail(name,rows,data){
   }).length;
   const pendencias=rows.filter(r=>tipoControle(r)==='pendencia'&&isControleOpen(r.statusControle)).length;
   const inoperantes=rows.filter(r=>normText(r.statusEquipamento)==='inoperante').length;
-  let h=`<div class="vd-header">
+  const img=vesselImage(name);
+  const imgPos=vesselImagePosition(name);
+  let h=`<div class="vd-header ${img?'has-photo':''}">
+    ${img?`<div class="vd-photo"><img src="${img}?v=${ASSET_VERSION}" alt="${escapeHtml(name)}" style="object-position:${imgPos};" onerror="this.closest('.vd-header').classList.add('image-missing');"></div>`:''}
     <div class="vd-left">
       <button class="vd-back" onclick="closeVesselDetail()"><i class="ti ti-x"></i> Fechar detalhe</button>
       <div class="vd-vessel-name"><span class="vd-dot" style="background:${dc};"></span>${escapeHtml(name)}</div>
