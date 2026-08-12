@@ -655,11 +655,10 @@ body{font-family:var(--font-sans);background:var(--bg-tertiary);color:var(--text
   <div id="page-matrix" class="page">
     <div class="matrix-legend">
       <span class="legend-item"><span class="m-dot m-ok"></span>Operacional</span>
-      <span class="legend-item"><span class="m-dot m-warn"></span>Atenção</span>
+      <span class="legend-item"><span class="m-dot m-warn"></span>Atenção/Pendência</span>
       <span class="legend-item"><span class="m-dot m-crit"></span>Inoperante/Vencido</span>
-      <span class="legend-item"><span class="m-dot m-spare"></span>Spare</span>
-      <span class="legend-item"><span class="m-dot m-absent"></span>Não embarcado</span>
-      <span class="legend-note">· Célula dividida: esq = ROV1, dir = ROV2</span>
+      <span class="legend-item"><span class="m-dot m-absent"></span>Sem registro</span>
+      <span class="legend-note">Fonte: aba ControleEquipamentos</span>
     </div>
     <div class="matrix-wrap"><table class="matrix-table" id="matrix-table"></table></div>
   </div>
@@ -910,22 +909,12 @@ const DataService={
   },
   async getData(){
     if(this._cache)return this._cache;
-    const[ri,rpos,rplat,rcontrole]=await Promise.all([
-      this.fetch('Inventario'),
+    const[rpos,rplat,rcontrole]=await Promise.all([
       this.fetch('Posicoes').catch(()=>[]),
       this.fetch('Plataformas').catch(()=>[]),
       this.fetch('ControleEquipamentos').catch(()=>[])
     ]);
-    const inventario=ri.map(r=>({
-      embarcacao:this.nk(r,'Embarcacao','Embarcação'),
-      rov:this.nk(r,'ROV'),
-      equipamento:this.nk(r,'Equipamento'),
-      modelo:this.nk(r,'Modelo'),
-      fabricante:this.nk(r,'Fabricante'),
-      serie:this.nk(r,'Serie','Série'),
-      vencimento:this.parseDateBR(this.nk(r,'Vencimento')),
-      status:this.nk(r,'Status')||'Operacional',
-    })).filter(r=>r.embarcacao&&r.equipamento&&FLEET_NAMES.has(r.embarcacao));
+    const inventario=[];
     const pendencias=[];
     const observacoes=[];
     const controleEquipamentos=rcontrole.map(r=>({
@@ -1069,13 +1058,14 @@ function canonicalControleGroup(grupo){
   return CONTROLE_GROUP_ORDER.find(g=>normText(g)===n)||'';
 }
 function hasControleEquipamentos(data){
-  return !!(data&&Array.isArray(data.controleEquipamentos)&&data.controleEquipamentos.some(r=>canonicalControleGroup(r.grupo)));
+  return !!(data&&Array.isArray(data.controleEquipamentos)&&data.controleEquipamentos.length);
 }
 function controleRowsByVessel(data,embarcacao){
   if(!data||!Array.isArray(data.controleEquipamentos))return[];
   return data.controleEquipamentos
-    .filter(r=>r.embarcacao===embarcacao&&canonicalControleGroup(r.grupo))
-    .map(r=>({...r,grupo:canonicalControleGroup(r.grupo)}));
+    .filter(r=>r.embarcacao===embarcacao)
+    .map(r=>({...r,grupo:canonicalControleGroup(r.grupo)||r.grupo}))
+    .filter(r=>r.grupo);
 }
 function tipoControle(r){return normText(r.tipoRegistro).replace(/\s+/g,'');}
 function vencimentoSituation(vencimento){
@@ -1222,7 +1212,49 @@ function renderSummary(data,vessels){
     <div class="summary-card"><div class="summary-label">Pendências</div><div class="summary-value warn">${pab}</div></div>`;
 }
 function mdot(st){const c={ok:'m-ok',warn:'m-warn',crit:'m-crit',spare:'m-spare',absent:'m-absent'}[st]||'m-absent';return`<span class="m-dot ${c}"></span>`;}
+function controleMatrixTitle(rows){
+  if(!rows.length)return'Sem registro na ControleEquipamentos';
+  const venc=rows.filter(r=>tipoControle(r)==='vencimento').length;
+  const pend=rows.filter(r=>tipoControle(r)==='pendencia').length;
+  const obs=rows.filter(r=>tipoControle(r)==='observacao').length;
+  const inop=rows.some(r=>normText(r.statusEquipamento)==='inoperante');
+  const next=controleNextDue(rows);
+  const parts=[
+    `${rows.length} registros`,
+    `${venc} vencimentos`,
+    `${pend} pendências`,
+    `${obs} observações`
+  ];
+  if(inop)parts.push('equipamento inoperante');
+  if(next)parts.push(`próximo: ${fmt(next.vencimento)}`);
+  return parts.join(' | ');
+}
 function renderMatrix(data){
+  if(hasControleEquipamentos(data)){
+    const present=[...new Set(data.controleEquipamentos.map(r=>canonicalControleGroup(r.grupo)||r.grupo).filter(Boolean))];
+    const preferred=CONTROLE_GROUP_ORDER.filter(eq=>present.includes(eq));
+    const extra=present.filter(eq=>!preferred.includes(eq)).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+    const eqs=[...preferred,...extra];
+    let h='<thead><tr><th class="lh">Embarcação</th><th class="lh">ROVs</th>';
+    eqs.forEach(eq=>{h+=`<th>${escapeHtml(CONTROLE_GROUP_LABELS[eq]||eq)}</th>`;});
+    h+='</tr></thead><tbody>';
+    FLEET.forEach(f=>{
+      const rows=controleRowsByVessel(data,f.embarcacao);
+      const st=vStFromGroups(controleGroupsForCard(rows));
+      const sc={ok:'#22c55e',warn:'#f59e0b',crit:'#ef4444'}[st]||'#64748b';
+      h+=`<tr><td class="vnc" style="border-left:3px solid ${sc};">${vesselLink(f.embarcacao,f.embarcacao)}</td>`;
+      h+=`<td class="rc">${f.rovs.join(' / ')}</td>`;
+      eqs.forEach(eq=>{
+        const groupRows=rows.filter(r=>r.grupo===eq);
+        const st=groupRows.length?groupControleStatus(groupRows):'absent';
+        h+=`<td title="${escapeHtml(controleMatrixTitle(groupRows))}"><div class="single-cell">${mdot(st)}</div></td>`;
+      });
+      h+='</tr>';
+    });
+    h+='</tbody>';
+    document.getElementById('matrix-table').innerHTML=h;
+    return;
+  }
   const eqs=[...new Set(data.inventario.map(i=>i.equipamento))].sort();
   let h='<thead><tr><th class="lh">Embarcação</th><th class="lh">ROVs</th>';
   eqs.forEach(eq=>{h+=`<th>${eq}</th>`;});
@@ -1965,7 +1997,7 @@ function getSearchMatches(t){
   const data=DataService._cache;
   const m=new Set();
   if(!data)return m;
-  data.inventario.forEach(i=>{if([i.embarcacao,i.equipamento,i.modelo,i.fabricante,i.serie,i.rov].join(' ').toLowerCase().includes(t))m.add(i.embarcacao);});
+  (data.inventario||[]).forEach(i=>{if([i.embarcacao,i.equipamento,i.modelo,i.fabricante,i.serie,i.rov].join(' ').toLowerCase().includes(t))m.add(i.embarcacao);});
   FLEET.forEach(f=>{if([f.embarcacao,...f.rovs].join(' ').toLowerCase().includes(t))m.add(f.embarcacao);});
   (data.controleEquipamentos||[]).forEach(r=>{if([r.embarcacao,r.grupo,r.tag,r.tipoRegistro,r.controle,r.statusEquipamento,r.descricao].join(' ').toLowerCase().includes(t))m.add(r.embarcacao);});
   return m;
