@@ -1162,18 +1162,13 @@ function vesselDetailUrl(name){
   url.searchParams.set('vessel',name);
   return url.href;
 }
-function openVesselFromLink(ev,name){
-  if(ev&&(ev.button!==0||ev.ctrlKey||ev.metaKey||ev.shiftKey||ev.altKey))return;
-  ev?.preventDefault();
-  openVessel(name,true);
-}
 function vesselLink(name,label,cls=''){
-  return`<a class="${cls}" href="${escapeHtml(vesselDetailUrl(name))}" onclick="openVesselFromLink(event,'${name.replace(/'/g,"\\'")}')">${escapeHtml(label||name)}</a>`;
+  return`<a class="${cls}" href="${escapeHtml(vesselDetailUrl(name))}" target="_blank" rel="noopener noreferrer">${escapeHtml(label||name)}</a>`;
 }
 function dashCard(v){
   const sc={ok:'stripe-ok',warn:'stripe-warn',crit:'stripe-critical'}[v.st];
   const img=vesselImage(v.name);
-  return`<a class="vessel-card" href="${escapeHtml(vesselDetailUrl(v.name))}" onclick="openVesselFromLink(event,'${v.name.replace(/'/g,"\\'")}')">
+  return`<a class="vessel-card" href="${escapeHtml(vesselDetailUrl(v.name))}" target="_blank" rel="noopener noreferrer">
     <div class="vessel-stripe ${sc}"></div>
     ${img?`<div class="vessel-photo">
       <img src="${img}?v=${ASSET_VERSION}" alt="${escapeHtml(v.name)}" loading="lazy" style="object-position:${vesselImagePosition(v.name)};" onerror="this.closest('.vessel-photo').classList.add('image-missing');">
